@@ -1,0 +1,49 @@
+# Local stack: PostGIS + migrations + the production image of the app.
+#   docker compose up --build        then open http://localhost:3000
+# Development with hot reload: run only the database (`docker compose up ogasabi-db`) and `npm run dev`.
+name: ogasabi
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://ogasabi:ogasabi@ogasabi-db:5432/ogasabi?schema=public
+  APP_URL: http://localhost:3000
+  # Throwaway local secrets. Real deployments must generate their own (see docs/deployment.md).
+  JWT_ACCESS_SECRET: local-only-jwt-secret-local-only-jwt-secret
+  DATA_HMAC_SECRET: local-only-hmac-secret-local-only-hmac-secret
+  CRON_SECRET: local-only-cron-secret-0123456789
+  CORS_ALLOWED_ORIGINS: http://localhost:3000
+  ALLOW_INSECURE_LOCAL: "true"
+
+services:
+  ogasabi-db:
+    image: postgis/postgis:16-3.4
+    container_name: ogasabi-db
+    environment:
+      POSTGRES_USER: ogasabi
+      POSTGRES_PASSWORD: ogasabi
+      POSTGRES_DB: ogasabi
+    ports: ["5432:5432"]
+    volumes: ["ogasabi-pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ogasabi -d ogasabi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ogasabi-migrate:
+    build: { context: ., target: migrate }
+    container_name: ogasabi-migrate
+    environment: *app-env
+    depends_on:
+      ogasabi-db: { condition: service_healthy }
+    restart: "no"
+
+  ogasabi-app:
+    build: { context: ., target: runner }
+    container_name: ogasabi-app
+    environment: *app-env
+    ports: ["3000:3000"]
+    depends_on:
+      ogasabi-migrate: { condition: service_completed_successfully }
+
+volumes:
+  ogasabi-pgdata:

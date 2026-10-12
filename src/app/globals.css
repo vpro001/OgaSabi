@@ -1,0 +1,186 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/bricolage-grotesque/index.css";
+@import "@fontsource-variable/figtree/index.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * OgaSabi design tokens.
+ *
+ * Palette ideas, all taken from the subject rather than a SaaS default:
+ *  - delta   : deep Niger-Delta green. Trust, growth, calm. The brand colour.
+ *  - marigold: the yellow of a safety helmet / a repaired-it-today sticker. Used for the one primary action on a screen.
+ *  - lagoon  : blue-green for information and the "verified" mark.
+ *  - paper   : a cool, slightly green off-white so cards and the page read as different surfaces without shadows.
+ * Contrast: every text/background pair below is >= 4.5:1 (WCAG AA); large text and UI strokes >= 3:1.
+ */
+:root {
+  --background: #f2f6f1;
+  --foreground: #10231c;
+  --card: #ffffff;
+  --card-foreground: #10231c;
+  --muted: #e6ede7;
+  --muted-foreground: #53665d;
+  --border: #d3ddd5;
+  --input: #bccabf;
+  --ring: #0e6b4f;
+
+  --primary: #0d5a43;
+  --primary-foreground: #f2f8f4;
+  --accent: #ffc247;
+  --accent-foreground: #231806;
+  --secondary: #dcebe2;
+  --secondary-foreground: #0b3f30;
+
+  --info: #0c6f7e;
+  --info-foreground: #ffffff;
+  --success: #1a7a47;
+  --success-foreground: #ffffff;
+  --warning: #9a5b00;
+  --warning-foreground: #ffffff;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+
+  /* Trust tiers */
+  --tier-new: #6b7a72;
+  --tier-trusted: #1a7a47;
+  --tier-highly-trusted: #0c6f7e;
+  --tier-top-rated: #b97a00;
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: #0b1612;
+  --foreground: #e6efe8;
+  --card: #12221b;
+  --card-foreground: #e6efe8;
+  --muted: #1a2d24;
+  --muted-foreground: #9db3a7;
+  --border: #25392f;
+  --input: #35503f;
+  --ring: #52c796;
+
+  --primary: #4cc491;
+  --primary-foreground: #05241a;
+  --accent: #ffc247;
+  --accent-foreground: #231806;
+  --secondary: #1d3328;
+  --secondary-foreground: #cfe7d9;
+
+  --info: #4fc3d4;
+  --info-foreground: #04262c;
+  --success: #52c796;
+  --success-foreground: #05241a;
+  --warning: #f2b04d;
+  --warning-foreground: #2a1a00;
+  --destructive: #ff8b80;
+  --destructive-foreground: #3a0805;
+
+  --tier-new: #94a79c;
+  --tier-trusted: #52c796;
+  --tier-highly-trusted: #4fc3d4;
+  --tier-top-rated: #ffc247;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-tier-new: var(--tier-new);
+  --color-tier-trusted: var(--tier-trusted);
+  --color-tier-highly-trusted: var(--tier-highly-trusted);
+  --color-tier-top-rated: var(--tier-top-rated);
+
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    "Figtree Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: var(--radius);
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+
+  /* Type scale (fluid between 360px and 1280px viewports) */
+  --text-display: clamp(2.5rem, 1.6rem + 3.6vw, 4.5rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.03em;
+  --text-h1: clamp(2rem, 1.5rem + 2vw, 3rem);
+  --text-h1--line-height: 1.08;
+  --text-h1--letter-spacing: -0.025em;
+  --text-h2: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.02em;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* 44px minimum touch target (WCAG 2.5.5 / Apple HIG). */
+@utility tap-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+@utility font-display-tight {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 90;
+}

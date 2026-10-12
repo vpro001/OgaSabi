@@ -1,0 +1,964 @@
+// OgaSabi data model.
+//
+// Conventions
+//  - Primary keys are UUIDv7 (time-ordered, so they double as stable pagination cursors).
+//  - Money is stored as integer minor units (kobo for NGN) in `*Kobo` columns, plus a currency code.
+//  - Tables are snake_case via @@map; columns keep Prisma's camelCase (quote them in raw SQL).
+//  - Soft delete (`deletedAt`) is used where history must survive: users, artisan profiles,
+//    portfolio photos. Requests, events, reviews and audit rows are never hard-deleted.
+//  - Things Prisma cannot express (PostGIS column + GiST index, CHECK constraints, immutability
+//    triggers) live in hand-written migrations. See docs/decisions.md (ADR-004, ADR-005).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum UserRole {
+  CUSTOMER
+  ARTISAN
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum OtpPurpose {
+  REGISTER
+  LOGIN
+  PASSWORD_RESET
+  VERIFY_PHONE
+  VERIFY_EMAIL
+}
+
+enum OtpChannel {
+  SMS
+  EMAIL
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum ArtisanStatus {
+  DRAFT // onboarding not finished
+  ACTIVE
+  SUSPENDED
+}
+
+enum VerificationLevel {
+  NONE
+  ID_VERIFIED
+  ID_SELFIE_VERIFIED
+  ADMIN_REVIEWED
+}
+
+enum IdDocumentType {
+  NIN
+  DRIVERS_LICENCE
+  VOTERS_CARD
+  INTERNATIONAL_PASSPORT
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+enum TrustTier {
+  NEW
+  TRUSTED
+  HIGHLY_TRUSTED
+  TOP_RATED
+}
+
+enum TrustTrigger {
+  JOB_COMPLETED
+  JOB_CANCELLED
+  COMPLAINT
+  DISPUTE_OUTCOME
+  VERIFICATION_CHANGE
+  REVIEW
+  NIGHTLY
+  MANUAL
+}
+
+enum RequestStatus {
+  PENDING // sent, waiting for the artisan
+  QUOTED // artisan sent a quote, waiting for the customer
+  ACCEPTED // artisan accepted (or customer accepted the quote); job is booked
+  EN_ROUTE
+  IN_PROGRESS
+  AWAITING_CONFIRMATION // artisan marked the job complete
+  COMPLETED // customer confirmed
+  DECLINED
+  CANCELLED
+  EXPIRED
+  DISPUTED
+}
+
+enum ActorType {
+  CUSTOMER
+  ARTISAN
+  ADMIN
+  SYSTEM
+}
+
+enum RequestEventType {
+  CREATED
+  VIEWED
+  ACCEPTED
+  DECLINED
+  QUOTED
+  QUOTE_ACCEPTED
+  QUOTE_REJECTED
+  EN_ROUTE
+  STARTED
+  MARKED_COMPLETE
+  CONFIRMED_COMPLETE
+  CANCELLED
+  EXPIRED
+  MESSAGE_SENT
+  DISPUTE_OPENED
+  DISPUTE_RESOLVED
+  REVIEW_POSTED
+  PAYMENT_RECEIVED
+}
+
+enum QuoteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  SUPERSEDED
+}
+
+enum MessageKind {
+  TEXT
+  IMAGE
+  SYSTEM
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+  FLAGGED
+}
+
+enum ReviewTag {
+  PUNCTUAL
+  CLEAN_WORK
+  FAIR_PRICE
+  GOOD_COMMUNICATION
+  KNOWLEDGEABLE
+  POLITE
+  FAST
+  WOULD_HIRE_AGAIN
+  LATE
+  OVERPRICED
+  MESSY
+  POOR_COMMUNICATION
+}
+
+enum ComplaintCategory {
+  NO_SHOW
+  LATE_ARRIVAL
+  POOR_WORKMANSHIP
+  OVERCHARGING
+  RUDE_BEHAVIOUR
+  UNSAFE_WORK
+  PROPERTY_DAMAGE
+  ABANDONED_JOB
+  FRAUD
+  NON_PAYMENT
+  OTHER
+}
+
+enum ComplaintSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ComplaintStatus {
+  OPEN
+  UNDER_REVIEW
+  UPHELD
+  DISMISSED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_FOR_CUSTOMER
+  RESOLVED_FOR_ARTISAN
+  RESOLVED_SPLIT
+  WITHDRAWN
+}
+
+enum ReportTargetType {
+  USER
+  REVIEW
+  MESSAGE
+}
+
+enum ReportReason {
+  SPAM
+  FAKE_PROFILE
+  FAKE_REVIEW
+  HARASSMENT
+  FRAUD
+  INAPPROPRIATE_CONTENT
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  ACTIONED
+  DISMISSED
+}
+
+enum NotificationType {
+  REQUEST_RECEIVED
+  REQUEST_ACCEPTED
+  REQUEST_DECLINED
+  QUOTE_RECEIVED
+  QUOTE_ACCEPTED
+  QUOTE_REJECTED
+  ARTISAN_EN_ROUTE
+  JOB_STARTED
+  JOB_MARKED_COMPLETE
+  JOB_CONFIRMED
+  REQUEST_CANCELLED
+  REQUEST_EXPIRED
+  NEW_MESSAGE
+  REVIEW_RECEIVED
+  REVIEW_REPLIED
+  COMPLAINT_UPDATE
+  DISPUTE_UPDATE
+  VERIFICATION_UPDATE
+  TRUST_SCORE_CHANGED
+  REMINDER
+  ACCOUNT_NOTICE
+}
+
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  SMS
+  EMAIL
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentPurpose {
+  CALLOUT_DEPOSIT
+}
+
+// ───────────────────────────── Identity & auth ─────────────────────────────
+
+model User {
+  id                String     @id @default(uuid(7)) @db.Uuid
+  email             String?    @unique // stored lower-cased
+  phone             String?    @unique // E.164, e.g. +2348031234567
+  emailVerifiedAt   DateTime?
+  phoneVerifiedAt   DateTime?
+  passwordHash      String? // argon2id; null for OTP-only accounts
+  firstName         String
+  lastName          String
+  avatarKey         String?
+  roles             UserRole[] @default([CUSTOMER])
+  status            UserStatus @default(ACTIVE)
+  suspendedAt       DateTime?
+  suspensionReason  String?
+  locale            String     @default("en-NG")
+  timezone          String     @default("Africa/Lagos")
+  termsAcceptedAt   DateTime?
+  privacyAcceptedAt DateTime?
+  marketingConsent  Boolean    @default(false)
+  lastLoginAt       DateTime?
+  failedLoginCount  Int        @default(0)
+  lockedUntil       DateTime?
+  deletedAt         DateTime?
+  anonymizedAt      DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  artisanProfile        ArtisanProfile?
+  refreshTokens         RefreshToken[]
+  otpCodes              OtpCode[]
+  deviceTokens          DeviceToken[]
+  favorites             Favorite[]
+  notifications         Notification[]
+  notificationPrefs     NotificationPreference[]
+  customerRequests      ServiceRequest[]         @relation("RequestCustomer")
+  messagesSent          Message[]
+  reviewsWritten        Review[]
+  complaintsFiled       Complaint[]              @relation("ComplaintFiler")
+  complaintsAgainst     Complaint[]              @relation("ComplaintTarget")
+  disputesOpened        Dispute[]                @relation("DisputeOpener")
+  reportsFiled          Report[]                 @relation("ReportReporter")
+  reportsAgainst        Report[]                 @relation("ReportTargetUser")
+  payments              Payment[]
+  verificationsReviewed IdentityVerification[]   @relation("VerificationReviewer")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @db.Uuid
+  familyId     String    @db.Uuid // all tokens descended from one login; reuse of a rotated token revokes the family
+  tokenHash    String    @unique // SHA-256 of the opaque token
+  userAgent    String?
+  ip           String?
+  expiresAt    DateTime
+  usedAt       DateTime? // set on rotation
+  revokedAt    DateTime?
+  replacedById String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model OtpCode {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  userId      String?    @db.Uuid
+  target      String // E.164 phone or lower-cased email
+  channel     OtpChannel
+  purpose     OtpPurpose
+  codeHash    String // HMAC of the code; plaintext is never stored
+  attempts    Int        @default(0)
+  maxAttempts Int        @default(5)
+  ip          String?
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([target, purpose, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
+model DeviceToken {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  userId     String         @db.Uuid
+  platform   DevicePlatform
+  token      String         @unique // Expo push token
+  appVersion String?
+  lastSeenAt DateTime       @default(now())
+  revokedAt  DateTime?
+  createdAt  DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@map("device_tokens")
+}
+
+// ───────────────────────────── Artisans & discovery ─────────────────────────────
+
+model Category {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  slug        String   @unique
+  name        String
+  description String?
+  iconKey     String // lucide-react icon name
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  artisans ArtisanCategory[]
+  requests ServiceRequest[]
+  photos   PortfolioPhoto[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model ArtisanProfile {
+  id                    String            @id @default(uuid(7)) @db.Uuid
+  userId                String            @unique @db.Uuid
+  businessName          String
+  bio                   String?
+  yearsExperience       Int               @default(0)
+  status                ArtisanStatus     @default(DRAFT)
+  verificationLevel     VerificationLevel @default(NONE)
+  // Base location + the radius the artisan will travel.
+  lat                   Float?
+  lng                   Float?
+  areaLabel             String? // "Rumuola, Port Harcourt": coarse, safe to show publicly
+  city                  String?
+  state                 String?
+  serviceRadiusKm       Int               @default(10)
+  calloutMinKobo        Int?
+  calloutMaxKobo        Int?
+  currency              String            @default("NGN")
+  timezone              String            @default("Africa/Lagos")
+  isAvailableNow        Boolean           @default(false)
+  availableNowUntil     DateTime? // the "available now" toggle expires on its own
+  responseTimeMedianSec Int?
+  whatsappNumber        String? // released to the customer only after acceptance
+  // Denormalised read model, written only by the trust engine / review service.
+  trustScore            Float             @default(0)
+  trustTier             TrustTier         @default(NEW)
+  completedJobsCount    Int               @default(0)
+  completionRate        Float?
+  ratingAverage         Float?
+  ratingCount           Int               @default(0)
+  trustComputedAt       DateTime?
+  deletedAt             DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // PostGIS point derived from lat/lng by a generated column (see migration 0002_postgis).
+  location Unsupported("geography(Point,4326)")?
+
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories     ArtisanCategory[]
+  availability   AvailabilitySlot[]
+  portfolio      PortfolioPhoto[]
+  verifications  IdentityVerification[]
+  requests       ServiceRequest[]
+  quotes         Quote[]
+  reviews        Review[]
+  favoritedBy    Favorite[]
+  trustSnapshots TrustScoreSnapshot[]
+
+  // Composite indexes backing the search query (and the bounding-box fallback).
+  @@index([status, isAvailableNow, trustScore(sort: Desc)])
+  @@index([status, lat, lng])
+  @@index([status, trustScore(sort: Desc)])
+  @@index([city, status])
+  @@index([location], type: Gist, map: "artisan_profiles_location_gist_idx")
+  @@index([businessName(ops: raw("gin_trgm_ops"))], type: Gin, map: "artisan_profiles_businessName_trgm_idx")
+  @@map("artisan_profiles")
+}
+
+model ArtisanCategory {
+  artisanId       String   @db.Uuid
+  categoryId      String   @db.Uuid
+  isPrimary       Boolean  @default(false)
+  yearsExperience Int?
+  createdAt       DateTime @default(now())
+
+  artisan  ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  category Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([artisanId, categoryId])
+  @@index([categoryId, artisanId])
+  @@map("artisan_categories")
+}
+
+model AvailabilitySlot {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  artisanId   String   @db.Uuid
+  dayOfWeek   Int // 0 = Sunday … 6 = Saturday (CHECK 0..6)
+  startMinute Int // minutes after local midnight (CHECK 0..1439)
+  endMinute   Int // exclusive, > startMinute (CHECK <= 1440)
+  createdAt   DateTime @default(now())
+
+  artisan ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+
+  @@unique([artisanId, dayOfWeek, startMinute])
+  @@map("availability_slots")
+}
+
+model PortfolioPhoto {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  artisanId  String    @db.Uuid
+  categoryId String?   @db.Uuid
+  storageKey String
+  url        String
+  width      Int?
+  height     Int?
+  caption    String?
+  sortOrder  Int       @default(0)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  artisan  ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  category Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([artisanId, deletedAt, sortOrder])
+  @@map("portfolio_photos")
+}
+
+model IdentityVerification {
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  artisanId          String             @db.Uuid
+  idType             IdDocumentType
+  // Private storage keys; served only through short-lived signed URLs to admins.
+  documentKey        String
+  selfieKey          String?
+  // HMAC of the ID number, used only to spot the same ID on several accounts. The number itself is never stored.
+  documentNumberHash String?
+  documentLast4      String?
+  faceMatchScore     Float?
+  status             VerificationStatus @default(PENDING)
+  levelGranted       VerificationLevel?
+  rejectionReason    String?
+  reviewedById       String?            @db.Uuid
+  reviewedAt         DateTime?
+  expiresAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  artisan  ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  reviewer User?          @relation("VerificationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([artisanId, status])
+  @@index([documentNumberHash])
+  @@map("identity_verifications")
+}
+
+model Favorite {
+  userId    String   @db.Uuid
+  artisanId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artisan ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+
+  @@id([userId, artisanId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("favorites")
+}
+
+// ───────────────────────────── Service requests ─────────────────────────────
+
+model ServiceRequest {
+  id                 String        @id @default(uuid(7)) @db.Uuid
+  customerId         String        @db.Uuid
+  artisanId          String        @db.Uuid
+  categoryId         String        @db.Uuid
+  status             RequestStatus @default(PENDING)
+  description        String
+  // Exact address is released to the artisan only once the request is accepted; before that the
+  // API exposes only `areaLabel` and a coarsened distance (see ADR-007).
+  addressLine        String
+  landmark           String?
+  areaLabel          String
+  city               String?
+  state              String?
+  lat                Float
+  lng                Float
+  isImmediate        Boolean       @default(false)
+  scheduledFor       DateTime?
+  currency           String        @default("NGN")
+  quotedAmountKobo   Int? // the active/accepted quote
+  finalAmountKobo    Int?
+  calloutFeeKobo     Int? // optional deposit when payments are enabled
+  expiresAt          DateTime? // pending requests expire if the artisan never responds
+  firstResponseAt    DateTime? // first artisan action; drives response-time scoring
+  acceptedAt         DateTime?
+  startedAt          DateTime?
+  markedCompleteAt   DateTime?
+  completedAt        DateTime? // customer confirmation
+  cancelledAt        DateTime?
+  cancelledById      String?       @db.Uuid
+  cancelledByRole    ActorType?
+  cancellationReason String?
+  declineReason      String?
+  version            Int           @default(0) // optimistic concurrency for state transitions
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  customer   User           @relation("RequestCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  artisan    ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Restrict)
+  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  photos     RequestPhoto[]
+  events     RequestEvent[]
+  messages   Message[]
+  quotes     Quote[]
+  review     Review?
+  complaints Complaint[]
+  disputes   Dispute[]
+  payments   Payment[]
+
+  @@index([artisanId, status, createdAt(sort: Desc)])
+  @@index([customerId, status, createdAt(sort: Desc)])
+  @@index([status, expiresAt])
+  @@index([status, scheduledFor])
+  @@index([artisanId, customerId]) // repeat-customer detection
+  @@map("service_requests")
+}
+
+model RequestPhoto {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  requestId    String   @db.Uuid
+  uploadedById String   @db.Uuid
+  storageKey   String
+  url          String
+  width        Int?
+  height       Int?
+  createdAt    DateTime @default(now())
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("request_photos")
+}
+
+// Append-only history. The trust engine and response-time stats read from here.
+// A trigger (migration 0003_integrity) rejects UPDATE and DELETE.
+model RequestEvent {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  requestId  String           @db.Uuid
+  type       RequestEventType
+  fromStatus RequestStatus?
+  toStatus   RequestStatus?
+  actorId    String?          @db.Uuid
+  actorRole  ActorType
+  metadata   Json?
+  createdAt  DateTime         @default(now())
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  @@index([requestId, createdAt])
+  @@index([type, createdAt])
+  @@map("request_events")
+}
+
+model Quote {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  requestId   String      @db.Uuid
+  artisanId   String      @db.Uuid
+  amountKobo  Int
+  note        String?
+  validUntil  DateTime?
+  status      QuoteStatus @default(PENDING)
+  respondedAt DateTime?
+  createdAt   DateTime    @default(now())
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  artisan ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Restrict)
+
+  @@index([requestId, createdAt(sort: Desc)])
+  @@map("quotes")
+}
+
+model Message {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  requestId     String      @db.Uuid
+  senderId      String?     @db.Uuid // null for SYSTEM messages
+  kind          MessageKind @default(TEXT)
+  body          String
+  attachmentKey String?
+  readAt        DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime    @default(now())
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender  User?          @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([requestId, createdAt, id]) // cursor pagination + SSE catch-up
+  @@map("messages")
+}
+
+// ───────────────────────────── Trust & safety ─────────────────────────────
+
+model Review {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  requestId    String       @unique @db.Uuid // exactly one review per request
+  authorId     String       @db.Uuid
+  artisanId    String       @db.Uuid
+  rating       Int // CHECK 1..5
+  tags         ReviewTag[]
+  comment      String?
+  replyBody    String?
+  repliedAt    DateTime?
+  status       ReviewStatus @default(PUBLISHED)
+  hiddenReason String?
+  // Manipulation discount in [0,1] assigned by the trust engine; 1 = counts fully.
+  trustWeight  Float        @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  author  User           @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  artisan ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Restrict)
+
+  @@index([artisanId, status, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("reviews")
+}
+
+model Complaint {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  requestId      String            @db.Uuid
+  filedById      String            @db.Uuid
+  filedByRole    ActorType
+  againstUserId  String            @db.Uuid
+  category       ComplaintCategory
+  severity       ComplaintSeverity @default(MEDIUM)
+  description    String
+  status         ComplaintStatus   @default(OPEN)
+  resolutionNote String?
+  resolvedById   String?           @db.Uuid
+  resolvedAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  request  ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  filedBy  User           @relation("ComplaintFiler", fields: [filedById], references: [id], onDelete: Restrict)
+  against  User           @relation("ComplaintTarget", fields: [againstUserId], references: [id], onDelete: Restrict)
+  evidence EvidenceFile[]
+
+  @@index([againstUserId, status, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@index([requestId])
+  @@map("complaints")
+}
+
+model Dispute {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  requestId        String        @db.Uuid
+  openedById       String        @db.Uuid
+  openedByRole     ActorType
+  reason           String
+  description      String
+  status           DisputeStatus @default(OPEN)
+  resolutionNote   String?
+  refundAmountKobo Int?
+  resolvedById     String?       @db.Uuid
+  resolvedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  request  ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  openedBy User           @relation("DisputeOpener", fields: [openedById], references: [id], onDelete: Restrict)
+  evidence EvidenceFile[]
+
+  @@index([status, createdAt])
+  @@index([requestId])
+  @@map("disputes")
+}
+
+// Evidence attached to a complaint or a dispute (exactly one of the two; enforced by CHECK).
+model EvidenceFile {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  complaintId  String?  @db.Uuid
+  disputeId    String?  @db.Uuid
+  uploadedById String   @db.Uuid
+  storageKey   String
+  mimeType     String
+  sizeBytes    Int
+  createdAt    DateTime @default(now())
+
+  complaint Complaint? @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  dispute   Dispute?   @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+  @@index([disputeId])
+  @@map("evidence_files")
+}
+
+model Report {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  reporterId      String           @db.Uuid
+  targetType      ReportTargetType
+  targetUserId    String?          @db.Uuid
+  targetReviewId  String?          @db.Uuid
+  targetMessageId String?          @db.Uuid
+  reason          ReportReason
+  details         String?
+  status          ReportStatus     @default(OPEN)
+  actionTaken     String?
+  reviewedById    String?          @db.Uuid
+  reviewedAt      DateTime?
+  createdAt       DateTime         @default(now())
+
+  reporter   User  @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser User? @relation("ReportTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([targetUserId])
+  @@map("reports")
+}
+
+// Every score recomputation is stored so the history is transparent and explainable.
+model TrustScoreSnapshot {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  artisanId      String       @db.Uuid
+  score          Float
+  tier           TrustTier
+  isProvisional  Boolean      @default(false) // "New" artisans with little history
+  components     Json // per-component points
+  inputs         Json // raw counts the components were computed from
+  formulaVersion String
+  trigger        TrustTrigger
+  computedAt     DateTime     @default(now())
+
+  artisan ArtisanProfile @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+
+  @@index([artisanId, computedAt(sort: Desc)])
+  @@index([computedAt])
+  @@map("trust_score_snapshots")
+}
+
+// ───────────────────────────── Notifications ─────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model NotificationDelivery {
+  id             String              @id @default(uuid(7)) @db.Uuid
+  notificationId String              @db.Uuid
+  channel        NotificationChannel
+  status         DeliveryStatus      @default(PENDING)
+  providerRef    String?
+  error          String?
+  attempts       Int                 @default(0)
+  sentAt         DateTime?
+  createdAt      DateTime            @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([status, channel, createdAt])
+  @@map("notification_deliveries")
+}
+
+model NotificationPreference {
+  userId   String                @db.Uuid
+  type     NotificationType
+  channels NotificationChannel[] // channels the user wants for this type; IN_APP is always on
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type])
+  @@map("notification_preferences")
+}
+
+// ───────────────────────────── Payments (feature-flagged) ─────────────────────────────
+
+model Payment {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  requestId       String         @db.Uuid
+  payerId         String         @db.Uuid
+  provider        String // "paystack"
+  reference       String         @unique
+  purpose         PaymentPurpose @default(CALLOUT_DEPOSIT)
+  amountKobo      Int
+  currency        String         @default("NGN")
+  status          PaymentStatus  @default(PENDING)
+  providerPayload Json?
+  paidAt          DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  payer   User           @relation(fields: [payerId], references: [id], onDelete: Restrict)
+
+  @@index([requestId])
+  @@index([payerId, createdAt(sort: Desc)])
+  @@map("payments")
+}
+
+// Dedupes provider webhooks (Paystack retries).
+model WebhookEvent {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  provider    String
+  eventId     String
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([provider, eventId])
+  @@map("webhook_events")
+}
+
+// ───────────────────────────── Platform ─────────────────────────────
+
+// Append-only (trigger in migration 0003_integrity).
+model AuditLog {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  actorId    String?   @db.Uuid
+  actorRole  ActorType
+  action     String // "verification.approve", "user.suspend", …
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  requestId  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([entityType, entityId, createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model IdempotencyKey {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  key            String
+  userId         String?   @db.Uuid
+  scope          String // "POST /api/v1/requests"
+  requestHash    String // SHA-256 of the body; same key + different body is rejected
+  responseStatus Int?
+  responseBody   Json?
+  lockedAt       DateTime? // set while the first request is still in flight
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+
+  @@unique([scope, userId, key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}

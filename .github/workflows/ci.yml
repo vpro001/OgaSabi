@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: postgresql://ogasabi:ogasabi@localhost:5432/ogasabi?schema=public
+  APP_URL: http://localhost:3000
+  JWT_ACCESS_SECRET: ci-only-jwt-secret-ci-only-jwt-secret-123
+  DATA_HMAC_SECRET: ci-only-hmac-secret-ci-only-hmac-secret-12
+  CRON_SECRET: ci-only-cron-secret-0123456789
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_USER: ogasabi, POSTGRES_PASSWORD: ogasabi, POSTGRES_DB: ogasabi }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ogasabi" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+      - name: Migrations match schema.prisma (no drift)
+        run: |
+          psql "postgresql://ogasabi:ogasabi@localhost:5432/postgres" -c 'CREATE DATABASE ogasabi_shadow'
+          npx prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma \
+            --shadow-database-url "postgresql://ogasabi:ogasabi@localhost:5432/ogasabi_shadow" --exit-code
+      - run: npm run db:seed
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: SKIP_ENV_VALIDATION=1 npm run build
+      - name: Commit messages follow Conventional Commits
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e -- --project=desktop
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: playwright-report }
