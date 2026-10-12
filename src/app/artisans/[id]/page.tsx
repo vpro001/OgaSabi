@@ -115,7 +115,7 @@ export default function ArtisanProfilePage({ params }: { params: { id: string } 
         <div className="space-y-8 lg:col-span-2">
           {/* Profile & Verification */}
           <section className="rounded-xl border bg-card p-6">
-            <h2 className="mb-6 font-display text-h2">Profile & Verification</h2>
+            <h2 className="font-display mb-6 text-h2">Profile & Verification</h2>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -191,7 +191,7 @@ export default function ArtisanProfilePage({ params }: { params: { id: string } 
               </div>
             </div>
             <div className="mt-8">
-              <h3 className="text-h3 mb-4 font-display">About</h3>
+              <h3 className="text-h3 font-display mb-4">About</h3>
               <p className="text-sm leading-relaxed whitespace-pre-line text-foreground/80">
                 {artisan.bio}
               </p>
@@ -201,7 +201,7 @@ export default function ArtisanProfilePage({ params }: { params: { id: string } 
           {/* Portfolio */}
           {artisan.portfolio && artisan.portfolio.length > 0 && (
             <section className="rounded-xl border bg-card p-6">
-              <h2 className="mb-6 font-display text-h2">Verified Work Portfolio</h2>
+              <h2 className="font-display mb-6 text-h2">Verified Work Portfolio</h2>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                 {artisan.portfolio.map((item, idx) => (
                   <Image
@@ -219,7 +219,7 @@ export default function ArtisanProfilePage({ params }: { params: { id: string } 
 
           {/* Reviews */}
           <section className="rounded-xl border bg-card p-6">
-            <h2 className="mb-6 font-display text-h2">Verified Customer Reviews</h2>
+            <h2 className="font-display mb-6 text-h2">Verified Customer Reviews</h2>
             {renderReviewsSection()}
           </section>
         </div>
@@ -228,7 +228,7 @@ export default function ArtisanProfilePage({ params }: { params: { id: string } 
         <div className="space-y-6">
           {/* Trust Score Breakdown */}
           <section className="rounded-xl border bg-card p-6">
-            <h2 className="mb-6 font-display text-h2">Trust Score Breakdown</h2>
+            <h2 className="font-display mb-6 text-h2">Trust Score Breakdown</h2>
             <div className="space-y-5">
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
@@ -326,7 +326,7 @@ export default function ArtisanProfilePage({ params }: { params: { id: string } 
 
           {/* Service Coverage & Protection */}
           <section className="rounded-xl border bg-card p-6">
-            <h2 className="mb-4 font-display text-h2">Service Coverage & Protection</h2>
+            <h2 className="font-display mb-4 text-h2">Service Coverage & Protection</h2>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Car className="size-5 text-info" />
@@ -358,7 +358,7 @@ export default function ArtisanProfilePage({ params }: { params: { id: string } 
 
           {/* Request Inspection */}
           <section className="rounded-xl border bg-card p-6">
-            <h2 className="mb-4 font-display text-h2">Request Inspection</h2>
+            <h2 className="font-display mb-4 text-h2">Request Inspection</h2>
             <div className="space-y-4">
               <div className="rounded-lg bg-muted p-3">
                 <p className="text-sm text-muted-foreground">Callout Fee</p>
@@ -387,13 +387,13 @@ export default function ArtisanProfilePage({ params }: { params: { id: string } 
 }
 
 function TrustTierBadge({ tier, score }: { tier: string; score: number }) {
-  const tierColors: Record<string, { dot: string; label: string }> = {
+  const tierColors = {
     NEW: { dot: "bg-tier-new", label: "New Sabi" },
     TRUSTED: { dot: "bg-tier-trusted", label: "Trusted Sabi" },
     HIGHLY_TRUSTED: { dot: "bg-tier-highly-trusted", label: "Highly Trusted" },
     TOP_RATED: { dot: "bg-tier-top-rated", label: "Top Rated Oga" },
-  };
-  const s = tierColors[tier] ?? tierColors.NEW;
+  } as const;
+  const s = tierColors[tier as keyof typeof tierColors] ?? tierColors.NEW;
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
       <span className={cn("size-2 rounded-full", s.dot)} aria-hidden />

@@ -119,27 +119,6 @@ export default function BookingFlowPage() {
       }
       return res.json();
     },
-    mutationFn: async (data: BookingRequest) => {
-      const res = await fetch("/api/v1/requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          artisanId,
-          problemDescription: data.problemDescription,
-          issueTags: data.issueTags,
-          locationDetails: data.locationDetails,
-          accessNotes: data.accessNotes,
-          isUrgent: data.isUrgent,
-          scheduledAt: data.scheduledAt,
-          categoryId: data.categoryId,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message ?? "Failed to create request");
-      }
-      return res.json();
-    },
     onSuccess: () => {
       localStorage.removeItem(`booking-draft-${artisanId ?? "new"}`);
       router.push("/booking/success");
@@ -446,7 +425,7 @@ export default function BookingFlowPage() {
 
         {/* Escrow summary */}
         <div className="rounded-xl border bg-muted/50 p-6">
-          <h3 className="mb-4 font-display text-h2">Initial Callout & Diagnostics Fee</h3>
+          <h3 className="font-display mb-4 text-h2">Initial Callout & Diagnostics Fee</h3>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Callout fee</span>

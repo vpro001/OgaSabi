@@ -1,4 +1,5 @@
 import { BadgeCheck, MapPin, Star, Zap } from "lucide-react";
+import Link from "next/link";
 import { Button, buttonVariants } from "./button";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/locale";
@@ -66,7 +67,7 @@ export function ArtisanCard({ artisan, href }: { artisan: ArtisanCardData; href:
     <article className="flex flex-col gap-3 rounded-xl border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate font-display text-lg font-semibold">
+          <h3 className="font-display truncate text-lg font-semibold">
             <a href={href} className="hover:text-primary focus-visible:text-primary">
               {artisan.businessName}
             </a>
@@ -119,23 +120,18 @@ export function ArtisanCard({ artisan, href }: { artisan: ArtisanCardData; href:
           {response && <p className="text-xs text-muted-foreground">{response}</p>}
         </div>
         <div className="flex gap-2">
-          <a href={href} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          <Link href={href} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
             View profile
-          </a>
-          <Button
-            variant="accent"
-            size="sm"
-            onClick={() => {
-              // Navigate to the booking flow for this artisan
-              // We pass the artisan id via query param; category selection will be optional.
-              const url = new URL(window.location.origin + "/booking/" + artisan.id);
-              // Future: add categoryId query when available
-              window.location.href = url.toString();
-            }}
-            aria-label={`Request inspection from ${artisan.businessName}`}
-          >
-            Request inspection
-          </Button>
+          </Link>
+          <Link href={`/booking/${artisan.id}`}>
+            <Button
+              variant="accent"
+              size="sm"
+              aria-label={`Request inspection from ${artisan.businessName}`}
+            >
+              Request inspection
+            </Button>
+          </Link>
         </div>
       </div>
     </article>

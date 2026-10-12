@@ -19,14 +19,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           select: { url: true, caption: true, sortOrder: true },
           orderBy: { sortOrder: "asc" },
         },
-        identityVerification: {
+        verifications: {
+          where: { status: "APPROVED" },
           select: {
             levelGranted: true,
             status: true,
             idType: true,
             documentLast4: true,
           },
-          where: { status: "APPROVED" },
+          take: 1,
         },
       },
     });
@@ -62,14 +63,13 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       ratingAverage: artisan.ratingAverage ?? null,
       ratingCount: artisan.ratingCount ?? 0,
       responseTimeMedianSec: artisan.responseTimeMedianSec ?? null,
-      availabilityLabel: artisan.availabilityLabel ?? null,
       lat: artisan.lat ?? 0,
       lng: artisan.lng ?? 0,
       portfolio: artisan.portfolio.map((p: { url: string; caption?: string | null }) => ({
         url: p.url,
         alt: p.caption ?? undefined,
       })),
-      identityVerification: artisan.identityVerification,
+      identityVerification: artisan.verifications[0] ?? null,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to load artisan";

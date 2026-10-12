@@ -1,46 +1,52 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource-variable/bricolage-grotesque/index.css";
-@import "@fontsource-variable/figtree/index.css";
+@import "@fontsource-variable/plus-jakarta-sans/index.css";
+@import "@fontsource-variable/space-grotesk/index.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * OgaSabi design tokens.
- *
- * Palette ideas, all taken from the subject rather than a SaaS default:
- *  - delta   : deep Niger-Delta green. Trust, growth, calm. The brand colour.
- *  - marigold: the yellow of a safety helmet / a repaired-it-today sticker. Used for the one primary action on a screen.
- *  - lagoon  : blue-green for information and the "verified" mark.
- *  - paper   : a cool, slightly green off-white so cards and the page read as different surfaces without shadows.
- * Contrast: every text/background pair below is >= 4.5:1 (WCAG AA); large text and UI strokes >= 3:1.
+ * OgaSabi design tokens — Nigerian artisan marketplace.
+ * Palette: Deep emerald (trust, growth) + Gold/Amber (action, verification).
+ * Fonts: Plus Jakarta Sans (headlines/body), Space Grotesk (labels/UI).
  */
 :root {
-  --background: #f2f6f1;
-  --foreground: #10231c;
+  /* Core surfaces */
+  --background: #f4fbf6;
+  --foreground: #161d1a;
   --card: #ffffff;
-  --card-foreground: #10231c;
-  --muted: #e6ede7;
-  --muted-foreground: #53665d;
-  --border: #d3ddd5;
-  --input: #bccabf;
-  --ring: #0e6b4f;
+  --card-foreground: #161d1a;
+  --muted: #e9f0eb;
+  --muted-foreground: #414942;
+  --border: #c1c9c0;
+  --input: #717972;
+  --ring: #032515;
 
-  --primary: #0d5a43;
-  --primary-foreground: #f2f8f4;
-  --accent: #ffc247;
-  --accent-foreground: #231806;
-  --secondary: #dcebe2;
-  --secondary-foreground: #0b3f30;
+  /* Brand: Emerald primary, Gold/Amber accent */
+  --primary: #032515;
+  --primary-foreground: #ffffff;
+  --primary-container: #bbefca;
+  --primary-container-foreground: #002110;
 
-  --info: #0c6f7e;
-  --info-foreground: #ffffff;
+  --accent: #fe932c;
+  --accent-foreground: #2f1500;
+  --accent-container: #ffdcc3;
+  --accent-container-foreground: #663500;
+
+  --secondary: #904d00;
+  --secondary-foreground: #ffffff;
+  --secondary-container: #fe932c;
+  --secondary-container-foreground: #2f1500;
+
+  /* Semantic */
   --success: #1a7a47;
   --success-foreground: #ffffff;
   --warning: #9a5b00;
   --warning-foreground: #ffffff;
-  --destructive: #b3261e;
+  --destructive: #ba1a1a;
   --destructive-foreground: #ffffff;
+  --info: #032515;
+  --info-foreground: #ffffff;
 
   /* Trust tiers */
   --tier-new: #6b7a72;
@@ -48,40 +54,61 @@
   --tier-highly-trusted: #0c6f7e;
   --tier-top-rated: #b97a00;
 
+  /* Elevated surfaces */
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #eef5f0;
+  --surface-container: #e9f0eb;
+  --surface-container-high: #e3eae5;
+  --surface-container-highest: #dde4df;
+
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: #0b1612;
-  --foreground: #e6efe8;
-  --card: #12221b;
-  --card-foreground: #e6efe8;
-  --muted: #1a2d24;
-  --muted-foreground: #9db3a7;
-  --border: #25392f;
-  --input: #35503f;
-  --ring: #52c796;
+  --background: #0a1410;
+  --foreground: #ebf2ed;
+  --card: #0f1c16;
+  --card-foreground: #ebf2ed;
+  --muted: #13241c;
+  --muted-foreground: #83a68f;
+  --border: #2b322f;
+  --input: #414942;
+  --ring: #a0d2af;
 
-  --primary: #4cc491;
-  --primary-foreground: #05241a;
-  --accent: #ffc247;
-  --accent-foreground: #231806;
-  --secondary: #1d3328;
-  --secondary-foreground: #cfe7d9;
+  --primary: #a0d2af;
+  --primary-foreground: #002110;
+  --primary-container: #0b3d24;
+  --primary-container-foreground: #78a888;
 
-  --info: #4fc3d4;
-  --info-foreground: #04262c;
+  --accent: #fe932c;
+  --accent-foreground: #2f1500;
+  --accent-container: #663500;
+  --accent-container-foreground: #ffdcc3;
+
+  --secondary: #fe932c;
+  --secondary-foreground: #000000;
+  --secondary-container: #663500;
+  --secondary-container-foreground: #ffdcc3;
+
   --success: #52c796;
   --success-foreground: #05241a;
   --warning: #f2b04d;
   --warning-foreground: #2a1a00;
   --destructive: #ff8b80;
   --destructive-foreground: #3a0805;
+  --info: #a0d2af;
+  --info-foreground: #05241a;
 
   --tier-new: #94a79c;
   --tier-trusted: #52c796;
   --tier-highly-trusted: #4fc3d4;
   --tier-top-rated: #ffc247;
+
+  --surface-container-lowest: #0a1410;
+  --surface-container-low: #0f1c16;
+  --surface-container: #13241c;
+  --surface-container-high: #182a22;
+  --surface-container-highest: #1d322a;
 }
 
 @theme inline {
@@ -94,28 +121,45 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-container: var(--primary-container);
+  --color-primary-container-foreground: var(--primary-container-foreground);
+
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-container: var(--accent-container);
+  --color-accent-container-foreground: var(--accent-container-foreground);
+
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-info: var(--info);
-  --color-info-foreground: var(--info-foreground);
+  --color-secondary-container: var(--secondary-container);
+  --color-secondary-container-foreground: var(--secondary-container-foreground);
+
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
   --color-tier-new: var(--tier-new);
   --color-tier-trusted: var(--tier-trusted);
   --color-tier-highly-trusted: var(--tier-highly-trusted);
   --color-tier-top-rated: var(--tier-top-rated);
 
-  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans:
-    "Figtree Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+
+  --font-headline: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-label: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
 
   --radius-xs: 0.375rem;
   --radius-sm: 0.5rem;
@@ -124,7 +168,7 @@
   --radius-xl: 1.5rem;
   --radius-2xl: 2rem;
 
-  /* Type scale (fluid between 360px and 1280px viewports) */
+  /* Fluid type scale */
   --text-display: clamp(2.5rem, 1.6rem + 3.6vw, 4.5rem);
   --text-display--line-height: 1.02;
   --text-display--letter-spacing: -0.03em;
@@ -147,7 +191,7 @@
   body {
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-sans);
+    font-family: var(--font-body);
     font-size: 1rem;
     line-height: 1.6;
     text-rendering: optimizeLegibility;
@@ -180,7 +224,50 @@
   min-width: 2.75rem;
 }
 
-@utility font-display-tight {
-  font-family: var(--font-display);
-  font-variation-settings: "wdth" 90;
+@utility font-headline {
+  font-family: var(--font-headline);
+}
+@utility font-label {
+  font-family: var(--font-label);
+}
+@utility font-body {
+  font-family: var(--font-body);
+}
+
+/* Adire pattern background utility */
+@utility adire-pattern {
+  background-image:
+    radial-gradient(rgba(187, 239, 202, 0.09) 1px, transparent 1px),
+    radial-gradient(rgba(254, 166, 25, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position:
+    0 0,
+    16px 16px;
+}
+
+/* Gold gradient text */
+@utility gold-gradient-text {
+  background: linear-gradient(135deg, #ffd77d 0%, #fe932c 60%, #e87a10 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Emerald glow */
+@utility emerald-glow {
+  box-shadow: 0 0 40px -10px rgba(57, 104, 75, 0.45);
+}
+
+/* Gold glow */
+@utility gold-glow {
+  box-shadow: 0 0 25px -4px rgba(254, 147, 44, 0.4);
+}
+
+/* Scrollbar hide */
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
