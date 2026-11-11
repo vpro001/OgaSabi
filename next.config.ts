@@ -13,16 +13,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   serverExternalPackages: ["argon2", "pg", "pino", "pino-pretty"],
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-    ],
-  },
   async headers() {
-    // A strict CSP with nonces is added together with the hardening pass (Phase 8).
+    // The Content-Security-Policy (per-request nonce) is set in src/proxy.ts.
     return [{ source: "/:path*", headers: securityHeaders }];
   },
 };

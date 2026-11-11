@@ -38,17 +38,20 @@ const schema = z
     TERMII_SENDER_ID: z.string().optional(),
     OTP_TTL_SEC: z.coerce.number().int().min(60).max(900).default(300),
 
-    // File storage
-    STORAGE_PROVIDER: z.enum(["mock", "s3", "cloudinary"]).default("mock"),
+    // Email (password reset, notifications)
+    EMAIL_PROVIDER: z.enum(["mock", "resend"]).default("mock"),
+    RESEND_API_KEY: z.string().optional(),
+    EMAIL_FROM: z.string().default("OgaSabi <no-reply@ogasabi.test>"),
+
+    // File storage. `mock` writes to UPLOAD_DIR on local disk.
+    STORAGE_PROVIDER: z.enum(["mock", "s3"]).default("mock"),
+    UPLOAD_DIR: z.string().default(".data/uploads"),
     S3_ENDPOINT: z.string().optional(),
     S3_REGION: z.string().optional(),
     S3_BUCKET: z.string().optional(),
     S3_ACCESS_KEY_ID: z.string().optional(),
     S3_SECRET_ACCESS_KEY: z.string().optional(),
     S3_PUBLIC_BASE_URL: z.string().optional(),
-    CLOUDINARY_CLOUD_NAME: z.string().optional(),
-    CLOUDINARY_API_KEY: z.string().optional(),
-    CLOUDINARY_API_SECRET: z.string().optional(),
     UPLOAD_MAX_BYTES: z.coerce
       .number()
       .int()
@@ -101,15 +104,11 @@ const schema = z
         need(!env[k], k, "required when STORAGE_PROVIDER=s3");
       }
     }
-    if (env.STORAGE_PROVIDER === "cloudinary") {
-      for (const k of [
-        "CLOUDINARY_CLOUD_NAME",
-        "CLOUDINARY_API_KEY",
-        "CLOUDINARY_API_SECRET",
-      ] as const) {
-        need(!env[k], k, "required when STORAGE_PROVIDER=cloudinary");
-      }
-    }
+    need(
+      env.EMAIL_PROVIDER === "resend" && !env.RESEND_API_KEY,
+      "RESEND_API_KEY",
+      "required when EMAIL_PROVIDER=resend",
+    );
     need(
       env.PAYMENTS_ENABLED && !env.PAYSTACK_SECRET_KEY,
       "PAYSTACK_SECRET_KEY",
@@ -130,6 +129,11 @@ const schema = z
         env.STORAGE_PROVIDER === "mock",
         "STORAGE_PROVIDER",
         "the mock storage provider is not allowed in production",
+      );
+      need(
+        env.EMAIL_PROVIDER === "mock",
+        "EMAIL_PROVIDER",
+        "the mock email provider is not allowed in production",
       );
       need(!env.APP_URL.startsWith("https://"), "APP_URL", "must use https in production");
     }

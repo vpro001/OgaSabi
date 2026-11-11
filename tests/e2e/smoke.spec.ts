@@ -2,9 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("home page renders the brand and headline", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Know who is coming to fix it",
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Hire verified artisans");
 });
 
 test("health endpoint answers with the API envelope", async ({ request }) => {
