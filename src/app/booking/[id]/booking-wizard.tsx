@@ -223,7 +223,7 @@ export function BookingWizard({ artisanId }: { artisanId: string }) {
     <div className="space-y-6">
       <Link
         href={`/artisans/${a.id}`}
-        className="flex items-center gap-3 card-surface p-3 hover:border-primary/40"
+        className="flex items-center gap-3 p-3 card-surface hover:border-primary/40"
       >
         <Avatar name={a.businessName} src={a.avatarUrl} />
         <div className="min-w-0 flex-1">
@@ -244,7 +244,7 @@ export function BookingWizard({ artisanId }: { artisanId: string }) {
               className="flex flex-1 flex-col gap-1.5"
               aria-current={i === step ? "step" : undefined}
             >
-              <span className={cn("h-1.5 rounded-full", i <= step ? "bg-accent" : "bg-muted")} />
+              <span className={cn("h-1.5 rounded-none", i <= step ? "bg-accent" : "bg-muted")} />
               <span
                 className={cn(
                   "flex items-center gap-1 font-label text-xs font-bold",
@@ -324,7 +324,7 @@ export function BookingWizard({ artisanId }: { artisanId: string }) {
                       onClick={() =>
                         update({ photos: draft.photos.filter((x) => x.key !== p.key) })
                       }
-                      className="absolute -top-2 -right-2 flex size-7 items-center justify-center rounded-full bg-foreground text-background shadow"
+                      className="absolute -top-2 -right-2 flex size-7 items-center justify-center rounded-none bg-foreground text-background shadow"
                     >
                       <X className="size-4" aria-hidden />
                     </button>

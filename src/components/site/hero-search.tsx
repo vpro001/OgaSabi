@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MapPin } from "lucide-react";
 import { LocationPicker } from "@/components/site/location-picker";
 import { usePlace } from "@/hooks/use-place";
 
+/** The search slab: one thick-ruled form, three cells, a yellow plate to press. */
 export function HeroSearch() {
   const router = useRouter();
   const { place } = usePlace();
@@ -21,30 +21,35 @@ export function HeroSearch() {
           e.preventDefault();
           router.push(q.trim() ? `/search?q=${encodeURIComponent(q.trim())}` : "/search");
         }}
-        className="flex flex-col gap-2 rounded-2xl border bg-card p-2 shadow-xl shadow-primary/5 sm:flex-row sm:items-center"
+        className="flex flex-col border-2 bg-card shadow-xl sm:flex-row"
       >
-        <label className="flex min-h-12 flex-1 items-center gap-3 rounded-xl px-3">
-          <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="sr-only">What do you need fixed?</span>
+        <label className="flex min-h-16 flex-1 flex-col justify-center px-4 py-2">
+          <span className="ticket-label text-muted-foreground">What is broken?</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="What do you need fixed? e.g. AC not cooling"
-            className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground/70"
+            placeholder="AC not cooling, socket sparking, tap leaking…"
+            className="w-full bg-transparent text-lg font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/70"
             enterKeyHint="search"
           />
         </label>
         <button
           type="button"
           onClick={() => setPicker(true)}
-          className="flex min-h-12 items-center gap-2 rounded-xl border-t px-3 text-left text-sm font-semibold hover:bg-muted sm:max-w-56 sm:border-t-0 sm:border-l sm:pl-4"
+          className="flex min-h-16 flex-col justify-center border-t-2 px-4 py-2 text-left hover:bg-primary-container sm:w-56 sm:border-t-0 sm:border-l-2"
         >
-          <MapPin className="size-5 shrink-0 text-accent" aria-hidden />
-          <span className="truncate">{place ? place.label : "Choose your area"}</span>
+          <span className="ticket-label text-muted-foreground">Where?</span>
+          <span className="flex items-center gap-1.5 truncate text-lg font-semibold">
+            <MapPin className="size-4 shrink-0 text-secondary" aria-hidden />
+            <span className="truncate">{place ? place.label : "Choose area"}</span>
+          </span>
         </button>
-        <Button type="submit" variant="accent" size="lg" className="rounded-xl">
-          Find artisans
-        </Button>
+        <button
+          type="submit"
+          className="min-h-16 cursor-pointer border-t-2 bg-accent px-8 font-display text-2xl text-accent-foreground transition-colors hover:bg-foreground hover:text-accent sm:border-t-0 sm:border-l-2"
+        >
+          Find am →
+        </button>
       </form>
       <LocationPicker open={picker} onClose={() => setPicker(false)} />
     </>

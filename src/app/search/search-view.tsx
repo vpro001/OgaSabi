@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { MapPin, Search, SearchX, SlidersHorizontal } from "lucide-react";
@@ -99,7 +99,7 @@ export function SearchView() {
         </p>
       </div>
 
-      <div className="space-y-4 card-surface p-4 sm:p-5">
+      <div className="space-y-4 p-4 card-surface sm:p-5">
         <form
           role="search"
           className="flex flex-col gap-2 sm:flex-row"
@@ -291,7 +291,7 @@ function Chip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors",
+        "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-none border px-3.5 text-sm font-semibold transition-colors",
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "bg-card hover:border-primary/40 hover:bg-muted",

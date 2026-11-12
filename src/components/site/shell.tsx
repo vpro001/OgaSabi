@@ -47,17 +47,19 @@ export function PageHeader({
   eyebrow?: string;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
-      <div className="min-w-0 space-y-1.5">
-        {eyebrow && (
-          <p className="font-label text-xs font-bold tracking-widest text-secondary uppercase">
-            {eyebrow}
-          </p>
-        )}
-        <h1 className="text-h1 font-extrabold">{title}</h1>
-        {description && <p className="max-w-2xl text-muted-foreground">{description}</p>}
+    <div className="mb-8 border-b-2 pb-6 sm:mb-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0 space-y-3">
+          {eyebrow && (
+            <p className="inline-block bg-foreground px-2 py-1 ticket-label text-background">
+              {eyebrow}
+            </p>
+          )}
+          <h1 className="text-h1">{title}</h1>
+        </div>
+        {action}
       </div>
-      {action}
+      {description && <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{description}</p>}
     </div>
   );
 }

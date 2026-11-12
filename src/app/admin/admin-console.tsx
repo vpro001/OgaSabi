@@ -91,7 +91,7 @@ export function AdminConsole() {
             >
               {t.label}
               {!!count && (
-                <span className="rounded-full bg-destructive px-1.5 font-label text-[11px] leading-5 text-destructive-foreground">
+                <span className="rounded-none bg-destructive px-1.5 font-label text-[11px] leading-5 text-destructive-foreground">
                   {count}
                 </span>
               )}
@@ -222,12 +222,12 @@ function OverviewPanel({
               {t.href ? (
                 <Link
                   href={`/admin${t.href}`}
-                  className="flex h-full flex-col card-surface p-4 hover:border-primary/40"
+                  className="flex h-full flex-col p-4 card-surface hover:border-primary/40"
                 >
                   {inner}
                 </Link>
               ) : (
-                <div className="flex h-full flex-col card-surface p-4">{inner}</div>
+                <div className="flex h-full flex-col p-4 card-surface">{inner}</div>
               )}
             </li>
           );
@@ -244,9 +244,9 @@ function OverviewPanel({
                 className="grid grid-cols-[11rem_1fr_3rem] items-center gap-3 text-sm"
               >
                 <dt className="truncate font-medium">{humanize(status)}</dt>
-                <dd className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
+                <dd className="h-2 overflow-hidden rounded-none bg-muted" aria-hidden>
                   <span
-                    className="block h-full rounded-full bg-primary"
+                    className="block h-full rounded-none bg-primary"
                     style={{ width: `${(count / total) * 100}%` }}
                   />
                 </dd>

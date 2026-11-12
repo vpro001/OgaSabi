@@ -4,12 +4,12 @@ import { cn } from "@/lib/utils";
 import { initials, type Tone } from "@/lib/format";
 
 const TONES: Record<Tone, string> = {
-  neutral: "bg-muted text-muted-foreground",
-  info: "bg-primary-container text-primary-container-foreground",
-  success: "bg-success/12 text-success",
-  warning: "bg-warning/12 text-warning",
-  danger: "bg-destructive/12 text-destructive",
-  accent: "bg-accent-container text-accent-container-foreground",
+  neutral: "border-muted-foreground text-muted-foreground",
+  info: "border-foreground bg-foreground text-background",
+  success: "border-success bg-success text-success-foreground",
+  warning: "border-foreground bg-accent text-accent-foreground",
+  danger: "border-destructive bg-destructive text-destructive-foreground",
+  accent: "border-foreground bg-accent text-accent-foreground",
 };
 
 export function Badge({
@@ -24,7 +24,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-label text-xs font-semibold whitespace-nowrap",
+        "inline-flex items-center gap-1 border-[1.5px] px-1.5 py-0.5 font-label text-[11px] leading-none font-bold tracking-wider whitespace-nowrap uppercase",
         TONES[tone],
         className,
       )}
@@ -55,13 +55,13 @@ export function PageLoading({ label = "Loading" }: { label?: string }) {
 }
 
 const ALERT = {
-  info: {
-    icon: Info,
-    cls: "border-primary/20 bg-primary-container/40 text-primary-container-foreground",
+  info: { icon: Info, cls: "border-foreground bg-card" },
+  success: { icon: CircleCheck, cls: "border-success bg-card [&>svg]:text-success" },
+  warning: {
+    icon: TriangleAlert,
+    cls: "border-foreground bg-primary-container text-primary-container-foreground",
   },
-  success: { icon: CircleCheck, cls: "border-success/30 bg-success/10 text-success" },
-  warning: { icon: TriangleAlert, cls: "border-warning/30 bg-warning/10 text-warning" },
-  danger: { icon: CircleAlert, cls: "border-destructive/30 bg-destructive/10 text-destructive" },
+  danger: { icon: CircleAlert, cls: "border-destructive bg-card [&>svg]:text-destructive" },
 } as const;
 
 export function Alert({
@@ -79,12 +79,12 @@ export function Alert({
   return (
     <div
       role={tone === "danger" ? "alert" : "status"}
-      className={cn("flex gap-3 rounded-lg border p-3.5 text-sm", cls, className)}
+      className={cn("flex gap-3 border-2 border-l-8 p-3.5 text-sm", cls, className)}
     >
       <Icon className="mt-0.5 size-5 shrink-0" aria-hidden />
       <div className="min-w-0 space-y-0.5">
-        {title && <p className="font-semibold">{title}</p>}
-        {children && <div className="text-foreground/85">{children}</div>}
+        {title && <p className="font-label text-xs font-bold tracking-wider uppercase">{title}</p>}
+        {children && <div>{children}</div>}
       </div>
     </div>
   );
@@ -102,11 +102,11 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed px-6 py-14 text-center">
-      <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+    <div className="flex flex-col items-center gap-3 border-2 border-dashed px-6 py-14 text-center">
+      <span className="flex size-14 items-center justify-center border-2 bg-accent text-accent-foreground shadow-sm">
         <Icon className="size-7" />
       </span>
-      <h3 className="text-lg font-bold">{title}</h3>
+      <h3 className="font-headline text-2xl">{title}</h3>
       {children && <p className="max-w-md text-muted-foreground">{children}</p>}
       {action && <div className="pt-2">{action}</div>}
     </div>
@@ -125,7 +125,7 @@ export function Avatar({
   return (
     <span
       className={cn(
-        "relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-container font-label text-sm font-bold text-primary-container-foreground",
+        "relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden border-2 border-foreground bg-accent font-display text-lg text-accent-foreground",
         className,
       )}
     >
@@ -146,7 +146,7 @@ export function Card({
   ...rest
 }: React.HTMLAttributes<HTMLElement> & { as?: "section" | "div" | "article" | "aside" }) {
   return (
-    <Tag className={cn("card-surface p-5 sm:p-6", className)} {...rest}>
+    <Tag className={cn("p-5 card-surface sm:p-6", className)} {...rest}>
       {children}
     </Tag>
   );
@@ -154,7 +154,7 @@ export function Card({
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-12 text-center">
+    <div className="flex flex-col items-center gap-3 border-2 border-destructive px-6 py-12 text-center">
       <CircleAlert className="size-8 text-destructive" aria-hidden />
       <p className="max-w-md font-medium">{message}</p>
       {onRetry && (

@@ -5,7 +5,7 @@ import { Errors } from "@/server/http/errors";
 import { hmac } from "@/server/auth/tokens";
 import { deleteObject, isValidKey, keyOwner, publicUrl } from "@/server/providers/storage";
 import { audit, createNotifications, deliverNotifications } from "@/server/services/notifications";
-import { recomputeTrustSoon } from "@/server/trust/engine";
+import { recomputeTrust, recomputeTrustSoon } from "@/server/trust/engine";
 import { MAX_POINTS, PROVISIONAL_BELOW_JOBS } from "@/server/trust/formula";
 import { normalizePhone } from "@/lib/phone";
 import {
@@ -220,7 +220,7 @@ export async function getPublicProfile(id: string, viewerId: string | null) {
   const isOwner = !!a && a.userId === viewerId;
   if (!a || (a.status !== "ACTIVE" && !isOwner)) throw Errors.notFound("Artisan");
 
-  const [favorite, snapshot, ratingRows] = await Promise.all([
+  const [favorite, firstSnapshot, ratingRows] = await Promise.all([
     viewerId
       ? db.favorite.findUnique({ where: { userId_artisanId: { userId: viewerId, artisanId: id } } })
       : null,
@@ -231,6 +231,15 @@ export async function getPublicProfile(id: string, viewerId: string | null) {
       _count: true,
     }),
   ]);
+  // A profile that has never been scored (freshly imported data) is scored on first view.
+  let snapshot = firstSnapshot;
+  if (!snapshot) {
+    await recomputeTrust(id, "MANUAL").catch(() => null);
+    snapshot = await db.trustScoreSnapshot.findFirst({
+      where: { artisanId: id },
+      orderBy: { computedAt: "desc" },
+    });
+  }
   const distribution = [5, 4, 3, 2, 1].map((star) => ({
     star,
     count: ratingRows.find((r) => r.rating === star)?._count ?? 0,

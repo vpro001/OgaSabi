@@ -76,7 +76,7 @@ export function Notifications() {
             <>
               <span
                 className={cn(
-                  "mt-2 size-2.5 shrink-0 rounded-full",
+                  "mt-2 size-2.5 shrink-0 rounded-none",
                   n.read ? "bg-transparent" : "bg-accent",
                 )}
                 aria-hidden

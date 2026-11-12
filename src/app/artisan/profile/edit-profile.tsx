@@ -198,7 +198,7 @@ function PortfolioEditor({ photos }: { photos: Photo[] }) {
               aria-label="Remove photo"
               disabled={remove.isPending}
               onClick={() => remove.mutate(p.id)}
-              className="absolute top-1 right-1 flex size-8 items-center justify-center rounded-full bg-foreground/80 text-background hover:bg-destructive"
+              className="absolute top-1 right-1 flex size-8 items-center justify-center rounded-none bg-foreground/80 text-background hover:bg-destructive"
             >
               <Trash2 className="size-4" aria-hidden />
             </button>

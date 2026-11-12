@@ -9,7 +9,7 @@ export default function NotFound() {
   return (
     <Shell width="narrow">
       <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <span className="flex size-16 items-center justify-center rounded-full bg-accent-container text-accent-container-foreground">
+        <span className="flex size-16 items-center justify-center rounded-none bg-accent-container text-accent-container-foreground">
           <Compass className="size-8" aria-hidden />
         </span>
         <h1 className="text-h1 font-extrabold">We could not find that page</h1>

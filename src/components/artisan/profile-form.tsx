@@ -253,7 +253,7 @@ export function ProfileForm({
             <button
               type="button"
               onClick={() => setPicker(true)}
-              aria-invalid={!!placeError || undefined}
+              data-error={!!placeError || undefined}
               className="flex field items-center gap-2 text-left font-semibold"
             >
               <MapPin className="size-5 shrink-0 text-accent" aria-hidden />

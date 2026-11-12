@@ -20,7 +20,7 @@ export default function ErrorPage({
       id="main"
       className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center"
     >
-      <span className="flex size-16 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+      <span className="flex size-16 items-center justify-center rounded-none bg-destructive/10 text-destructive">
         <TriangleAlert className="size-8" aria-hidden />
       </span>
       <h1 className="text-h1 font-extrabold">Something went wrong</h1>

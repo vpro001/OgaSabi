@@ -1,44 +1,45 @@
 import { type ReactNode } from "react";
-import { ShieldCheck, Star, EyeOff } from "lucide-react";
 import { Logo } from "@/components/site/logo";
+import { Stamp } from "@/components/artisan/trust";
 
 const POINTS = [
-  { icon: ShieldCheck, text: "Artisans verified by real people, not just a form" },
-  { icon: Star, text: "Reviews only from confirmed, completed jobs" },
-  { icon: EyeOff, text: "Your address stays private until a job is accepted" },
+  "ID checked by a person",
+  "Reviews only from finished jobs",
+  "Address hidden until you book",
 ];
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-dvh lg:grid-cols-2">
-      <aside className="relative hidden overflow-hidden bg-[#032515] p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="pointer-events-none absolute inset-0 adire-pattern" aria-hidden />
-        <div
-          className="pointer-events-none absolute -right-24 -bottom-24 size-96 rounded-full bg-[#fe932c]/15 blur-3xl"
-          aria-hidden
-        />
-        <Logo inverted className="relative" />
-        <div className="relative space-y-8">
-          <p className="max-w-md font-headline text-4xl leading-tight font-extrabold">
-            Know who is coming to fix it,{" "}
-            <span className="gold-gradient-text">before they arrive.</span>
+    <div className="grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
+      <aside className="relative hidden overflow-hidden border-r-2 bg-accent text-accent-foreground lg:flex lg:flex-col lg:justify-between">
+        <div className="h-4 border-b-2 border-ink hazard" aria-hidden />
+        <div className="p-12">
+          <Logo />
+        </div>
+        <div className="relative p-12 pt-0">
+          <p className="font-display text-[clamp(4rem,8.5vw,9rem)] leading-[0.82] tracking-tight">
+            Know who dey come fix am.
           </p>
-          <ul className="space-y-4">
-            {POINTS.map((p) => (
-              <li key={p.text} className="flex items-center gap-3 text-emerald-100/90">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-white/10">
-                  <p.icon className="size-5 text-[#fe932c]" aria-hidden />
-                </span>
-                {p.text}
+          <Stamp tone="signal" tilt={-8} className="absolute -top-12 right-10 bg-accent text-xl">
+            Before they arrive
+          </Stamp>
+          <ul className="mt-10 border-t-2 border-ink">
+            {POINTS.map((p, i) => (
+              <li
+                key={p}
+                className="flex items-center gap-4 border-b-2 border-ink py-3 font-semibold"
+              >
+                <span className="ticket-label">{String(i + 1).padStart(2, "0")}</span>
+                {p}
               </li>
             ))}
           </ul>
         </div>
-        <p className="relative text-xs text-emerald-100/50">© {new Date().getFullYear()} OgaSabi</p>
+        <div className="h-4 border-t-2 border-ink hazard" aria-hidden />
       </aside>
       <main id="main" className="flex flex-col items-center justify-center px-4 py-10 sm:px-8">
         <div className="w-full max-w-md">
-          <Logo className="mb-8 lg:hidden" />
+          <Logo className="mb-10 lg:hidden" />
           {children}
         </div>
       </main>

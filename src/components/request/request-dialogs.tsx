@@ -80,7 +80,7 @@ export function ReasonDialog({
                 type="button"
                 onClick={() => setReason(s)}
                 className={cn(
-                  "min-h-9 rounded-full border px-3 text-sm font-medium",
+                  "min-h-9 rounded-none border px-3 text-sm font-medium",
                   reason === s ? "border-primary bg-primary-container/50" : "hover:bg-muted",
                 )}
               >
@@ -305,7 +305,7 @@ export function ReviewDialog({
                       )
                     }
                     className={cn(
-                      "min-h-9 rounded-full border px-3 text-sm font-medium",
+                      "min-h-9 rounded-none border px-3 text-sm font-medium",
                       on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
                     )}
                   >

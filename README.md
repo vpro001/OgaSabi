@@ -3,7 +3,7 @@
 Find verified, trust-scored local artisans (electricians, plumbers, AC and generator technicians, mechanics, painters…) and request their services. _Oga_ means boss, _sabi_ means to know.
 Primary market: Nigeria (₦, +234, mobile-first, low bandwidth). Locale, currency and calling code are configuration.
 
-**Status:** Phase 1 of 8 (scaffold, schema, migrations, seed). See the phase plan in `docs/decisions.md` and the build log below.
+**Status:** feature-complete web app and API: accounts, geo search, artisan profiles and onboarding, the full request lifecycle with quotes and chat, reviews, trust engine, identity verification, complaints and disputes, notifications, admin console.
 
 ## Stack
 
@@ -24,7 +24,8 @@ npm run dev                       # http://localhost:3000
 
 Or run everything in containers: `docker compose up --build` (app on :3000, runs migrations + categories only).
 
-Useful pages: `/design` (design tokens, dev only) · `/api/v1/health` · `/api/v1/ready`
+With the mock providers, one-time codes are shown on screen and uploads are written to `.data/uploads`.
+After seeding, score every profile once: `curl -X POST -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/v1/cron/trust`.
 Demo logins (password `OgaSabi#Dev2026`): `admin@ogasabi.test`, `adaeze.nwankwo@ogasabi.test` (customer), `ibifuro.briggs@ogasabi.test` (artisan).
 
 ## Scripts
@@ -42,12 +43,19 @@ Demo logins (password `OgaSabi#Dev2026`): `admin@ogasabi.test`, `adaeze.nwankwo@
 ## Layout
 
 ```
-prisma/            schema, migrations, seed (reference + demo)
-src/app/           routes: pages and /api/v1 handlers
-src/server/        logger, db client, HTTP envelope (services, repositories, trust engine arrive in later phases)
-src/lib/           locale/money, phone, utils (shared with the browser)
-src/components/ui/ shadcn-style primitives
-docs/              decisions, database, (trust-score, API, deployment in later phases)
+prisma/             schema, migrations, seed (reference + demo)
+src/app/            pages and /api/v1 route handlers
+src/proxy.ts        Content-Security-Policy nonce + sign-in redirects
+src/server/         http (handler wrapper, errors), auth, services, trust engine, providers
+src/lib/            schemas (shared Zod), api client, formatting, geo, locale
+src/components/     ui primitives, site shell, artisan and request components
+src/hooks/          session, location, own artisan profile
+tests/              unit, integration (real database), e2e (Playwright)
+docs/               decisions, database, trust-score, deployment
 ```
+
+## How it fits together
+
+Route handler (`route()` in `src/server/http/handler.ts`: session, roles, CSRF, rate limit, Zod) → service → Prisma. The browser calls the same `/api/v1` endpoints through `src/lib/api.ts` and TanStack Query. See `docs/decisions.md` for the reasoning and `docs/deployment.md` to go live.
 
 Commits follow Conventional Commits (enforced by commitlint + husky).

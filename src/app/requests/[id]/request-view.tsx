@@ -232,9 +232,7 @@ export function RequestView({ id }: { id: string }) {
 
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-            {r.category.name} job
-          </h1>
+          <h1 className="text-h2">{r.category.name} job</h1>
           <StatusBadge status={r.status} />
         </div>
         <p className="text-sm text-muted-foreground">
@@ -250,8 +248,8 @@ export function RequestView({ id }: { id: string }) {
               >
                 <span
                   className={cn(
-                    "block h-1.5 rounded-full",
-                    i <= flowIndex ? "bg-success" : "bg-muted",
+                    "block h-3 border-2",
+                    i <= flowIndex ? "bg-accent" : "bg-transparent opacity-40",
                   )}
                 />
                 <span
@@ -556,8 +554,10 @@ export function RequestView({ id }: { id: string }) {
               <dl className="mt-4 grid grid-cols-2 gap-3 border-t pt-4">
                 {r.quotedAmountKobo != null && (
                   <div>
-                    <dt className="text-xs text-muted-foreground">Agreed quote</dt>
-                    <dd className="text-lg font-extrabold tabular-nums">
+                    <dt className="text-xs text-muted-foreground">
+                      {r.acceptedAt ? "Agreed price" : "Quoted price"}
+                    </dt>
+                    <dd className="font-display text-3xl leading-none tabular-nums">
                       {formatMoney(r.quotedAmountKobo)}
                     </dd>
                   </div>
@@ -565,7 +565,7 @@ export function RequestView({ id }: { id: string }) {
                 {r.finalAmountKobo != null && (
                   <div>
                     <dt className="text-xs text-muted-foreground">Final amount</dt>
-                    <dd className="text-lg font-extrabold tabular-nums">
+                    <dd className="font-display text-3xl leading-none tabular-nums">
                       {formatMoney(r.finalAmountKobo)}
                     </dd>
                   </div>
@@ -706,7 +706,7 @@ export function RequestView({ id }: { id: string }) {
               {r.events.map((e) => (
                 <li key={e.id} className="relative">
                   <span
-                    className="absolute top-1.5 -left-[1.4rem] size-2.5 rounded-full bg-primary ring-4 ring-card"
+                    className="absolute top-1.5 -left-[1.4rem] size-2.5 rounded-none bg-primary ring-4 ring-card"
                     aria-hidden
                   />
                   <p className="text-sm font-semibold">{EVENT_LABEL[e.type] ?? humanize(e.type)}</p>

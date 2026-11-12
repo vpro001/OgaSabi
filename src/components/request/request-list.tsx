@@ -101,8 +101,8 @@ function RequestCard({ request: r, as }: { request: RequestSummary; as: "custome
     <Link
       href={`/requests/${r.id}`}
       className={cn(
-        "block card-surface p-4 transition-shadow hover:shadow-lg sm:p-5",
-        needsYou && "ring-2 ring-accent/60",
+        "block p-4 transition-shadow card-surface hover:shadow-lg sm:p-5",
+        needsYou && "shadow-[6px_6px_0_var(--accent)]",
       )}
     >
       <div className="flex items-start gap-3">

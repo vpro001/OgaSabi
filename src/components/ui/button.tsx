@@ -2,26 +2,31 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-// Variants: `default` is the brand action; `accent` (marigold) is reserved for the one primary
-// call-to-action on a screen, e.g. "Request service".
+// Buttons are painted blocks: ink outline, hard shadow, and they sink when pressed.
+// `accent` (danfo yellow) is the one primary action on a screen.
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 border-2 border-foreground font-label text-sm font-bold tracking-wide whitespace-nowrap uppercase transition-[transform,box-shadow,background-color] duration-100 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        accent: "bg-accent text-accent-foreground hover:bg-accent/85",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/70",
-        outline: "border border-input bg-card text-foreground hover:bg-muted",
-        ghost: "text-foreground hover:bg-muted",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        link: "text-primary underline-offset-4 hover:underline",
+        default:
+          "bg-foreground text-background shadow-[3px_3px_0_var(--accent)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_var(--accent)] active:translate-0 active:shadow-none",
+        accent:
+          "bg-accent text-accent-foreground shadow-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-md active:translate-0 active:shadow-none",
+        secondary:
+          "bg-secondary text-secondary-foreground shadow-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-md active:translate-0 active:shadow-none",
+        outline: "bg-card text-foreground hover:bg-accent hover:text-accent-foreground",
+        ghost:
+          "border-transparent text-foreground underline decoration-2 underline-offset-4 hover:border-foreground hover:no-underline",
+        destructive:
+          "bg-destructive text-destructive-foreground shadow-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-md active:translate-0 active:shadow-none",
+        link: "border-transparent text-foreground underline decoration-2 underline-offset-4",
       },
       size: {
-        default: "min-h-11 px-5 text-base",
-        sm: "min-h-10 px-4 text-sm",
-        lg: "min-h-12 px-7 text-base",
-        icon: "size-11",
+        default: "min-h-12 px-5",
+        sm: "min-h-10 px-3.5 text-xs",
+        lg: "min-h-14 px-7 text-base",
+        icon: "size-12",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

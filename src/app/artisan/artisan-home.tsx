@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  BadgeCheck,
   Briefcase,
   Inbox,
   MessageCircle,
@@ -13,7 +12,7 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
-import { TrustBadge } from "@/components/artisan/trust";
+import { Stamp, TrustBadge, TrustGauge } from "@/components/artisan/trust";
 import { RequestList } from "@/components/request/request-list";
 import { PageHeader } from "@/components/site/shell";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -58,30 +57,26 @@ export function ArtisanHome() {
     const href = me ? "/artisan/onboarding" : "/register?as=artisan&next=/artisan/onboarding";
     return (
       <div className="space-y-10">
-        <section className="relative overflow-hidden rounded-3xl bg-[#032515] p-6 text-white sm:p-12">
-          <div className="pointer-events-none absolute inset-0 adire-pattern" aria-hidden />
-          <div className="relative max-w-2xl space-y-4">
-            <p className="font-label text-xs font-bold tracking-widest text-[#fe932c] uppercase">
-              For artisans
-            </p>
-            <h1 className="font-headline text-4xl leading-tight font-extrabold sm:text-5xl">
-              You sabi the work. <span className="gold-gradient-text">Let customers find you.</span>
+        <section className="border-2 bg-accent text-accent-foreground shadow-xl">
+          <div className="h-3 border-b-2 border-ink hazard" aria-hidden />
+          <div className="p-6 sm:p-12">
+            <p className="ticket-label">Artisans wanted</p>
+            <h1 className="mt-4 text-display">
+              You sabi the work.{" "}
+              <span className="bg-ink px-[0.08em] text-danfo">Hang your sign.</span>
             </h1>
-            <p className="text-lg text-emerald-100/85">
+            <p className="mt-6 max-w-xl text-lg">
               A free profile, job requests from people near you, and a reputation that grows with
               every job you finish well.
             </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Link href={href} className={buttonVariants({ variant: "accent", size: "lg" })}>
-                Create my free profile
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href={href} className={buttonVariants({ size: "lg" })}>
+                Create my free profile →
               </Link>
               {!me && (
                 <Link
                   href="/login?next=/artisan"
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "lg" }),
-                    "border-white/30 bg-transparent text-white hover:bg-white/10",
-                  )}
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
                 >
                   I already have an account
                 </Link>
@@ -91,7 +86,7 @@ export function ArtisanHome() {
         </section>
         <ul className="grid gap-4 sm:grid-cols-2">
           {BENEFITS.map((b) => (
-            <li key={b.title} className="flex gap-4 card-surface p-5">
+            <li key={b.title} className="flex gap-4 p-5 card-surface">
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent-container text-accent-container-foreground">
                 <b.icon className="size-5" aria-hidden />
               </span>
@@ -202,26 +197,26 @@ function Dashboard({ profile: p }: { profile: OwnArtisanProfile }) {
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
         <Card className="flex flex-col justify-between gap-4">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-label text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                Trust score
-              </p>
-              <p className="font-headline text-5xl font-black text-primary tabular-nums">
-                {Math.round(p.trustScore)}
-                <span className="text-lg font-bold text-muted-foreground">/100</span>
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-wrap items-center gap-6">
+            <TrustGauge
+              score={p.trustScore}
+              tier={p.trustTier}
+              provisional={p.completedJobsCount < 3}
+              className="w-52"
+            />
+            <div className="space-y-3">
+              <p className="ticket-label text-muted-foreground">Your trust meter</p>
               <TrustBadge
                 tier={p.trustTier}
                 score={p.trustScore}
                 provisional={p.completedJobsCount < 3}
               />
               {p.verificationLevel !== "NONE" && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
-                  <BadgeCheck className="size-4" aria-hidden /> ID verified
-                </span>
+                <p>
+                  <Stamp className="text-xs" tilt={-4}>
+                    ✓ ID verified
+                  </Stamp>
+                </p>
               )}
             </div>
           </div>

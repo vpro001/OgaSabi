@@ -57,20 +57,20 @@ export function SiteHeader() {
   const name = me ? `${me.firstName} ${me.lastName}` : "";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b-2 bg-background">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-card focus:px-4 focus:py-2 focus:font-semibold"
       >
         Skip to content
       </a>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
+      <div className="mx-auto flex h-16 max-w-7xl items-stretch justify-between gap-3 px-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Logo />
           <button
             type="button"
             onClick={() => setPicker(true)}
-            className="hidden min-h-10 max-w-52 items-center gap-1.5 rounded-full border bg-card px-3 font-label text-xs font-semibold hover:border-primary/40 sm:inline-flex"
+            className="hidden min-h-10 max-w-52 items-center gap-1.5 border-2 border-dashed px-2.5 ticket-label hover:border-solid hover:bg-accent hover:text-accent-foreground sm:inline-flex"
           >
             <MapPin className="size-4 shrink-0 text-accent" aria-hidden />
             <span className="truncate">
@@ -80,36 +80,36 @@ export function SiteHeader() {
           </button>
         </div>
 
-        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+        <nav aria-label="Main" className="hidden items-stretch lg:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
-              className="rounded-lg px-3.5 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"
+              className="flex items-center border-l-2 px-4 ticket-label last:border-r-2 hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-foreground aria-[current=page]:text-background"
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           {me ? (
             <>
               <Link
                 href="/notifications"
                 aria-label={`Notifications${me.unreadNotifications ? `, ${me.unreadNotifications} unread` : ""}`}
-                className="relative inline-flex tap-target items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="relative inline-flex tap-target items-center justify-center hover:bg-accent hover:text-accent-foreground"
               >
                 <Bell className="size-5" aria-hidden />
                 {me.unreadNotifications > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 font-label text-[10px] leading-4.5 font-bold text-destructive-foreground ring-2 ring-background">
+                  <span className="absolute top-1.5 right-1.5 flex min-w-4.5 items-center justify-center rounded-none bg-destructive px-1 font-label text-[10px] leading-4.5 font-bold text-destructive-foreground ring-2 ring-background">
                     {me.unreadNotifications > 9 ? "9+" : me.unreadNotifications}
                   </span>
                 )}
               </Link>
               <details className="group relative hidden lg:block">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-full pr-2 pl-1 hover:bg-muted [&::-webkit-details-marker]:hidden">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 pr-2 pl-1 hover:bg-accent hover:text-accent-foreground [&::-webkit-details-marker]:hidden">
                   <Avatar name={name} src={me.avatarUrl} className="size-9" />
                   <span className="max-w-28 truncate text-sm font-semibold">{me.firstName}</span>
                   <ChevronDown
@@ -117,19 +117,19 @@ export function SiteHeader() {
                     aria-hidden
                   />
                 </summary>
-                <div className="absolute right-0 mt-2 w-64 rounded-xl border bg-card p-1.5 shadow-xl">
+                <div className="absolute right-0 mt-2 w-64 border-2 bg-card p-1.5 shadow-lg">
                   {accountLinks.map((l) => (
                     <Link
                       key={l.href}
                       href={l.href}
-                      className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium hover:bg-muted"
+                      className="flex min-h-11 items-center gap-3 px-3 text-sm font-semibold hover:bg-accent hover:text-accent-foreground"
                     >
                       <l.icon className="size-4.5 text-muted-foreground" aria-hidden />
                       {l.label}
                     </Link>
                   ))}
                   <hr className="my-1.5" />
-                  <ThemeToggle className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium hover:bg-muted [&_svg]:size-4.5 [&_svg]:text-muted-foreground" />
+                  <ThemeToggle className="flex min-h-11 w-full items-center gap-3 px-3 text-sm font-semibold hover:bg-accent hover:text-accent-foreground [&_svg]:size-4.5 [&_svg]:text-muted-foreground" />
                   <button
                     type="button"
                     onClick={signOut}
@@ -169,7 +169,7 @@ export function SiteHeader() {
             type="button"
             onClick={() => setMenu(true)}
             aria-label="Open menu"
-            className="inline-flex tap-target items-center justify-center rounded-full hover:bg-muted lg:hidden"
+            className="inline-flex tap-target items-center justify-center border-2 hover:bg-accent lg:hidden"
           >
             <Menu className="size-6" aria-hidden />
           </button>
@@ -194,7 +194,7 @@ export function SiteHeader() {
               setMenu(false);
               setPicker(true);
             }}
-            className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left font-medium hover:bg-muted"
+            className="flex min-h-12 w-full items-center gap-3 px-3 text-left font-semibold hover:bg-accent hover:text-accent-foreground"
           >
             <MapPin className="size-5 text-accent" aria-hidden />
             <span className="truncate">
@@ -205,7 +205,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex min-h-12 items-center gap-3 rounded-lg px-3 font-medium hover:bg-muted"
+              className="flex min-h-12 items-center gap-3 px-3 font-semibold hover:bg-accent hover:text-accent-foreground"
             >
               {item.href === "/search" ? (
                 <UserRound className="size-5 text-muted-foreground" aria-hidden />
@@ -222,14 +222,14 @@ export function SiteHeader() {
             <Link
               key={l.href}
               href={l.href}
-              className="flex min-h-12 items-center gap-3 rounded-lg px-3 font-medium hover:bg-muted"
+              className="flex min-h-12 items-center gap-3 px-3 font-semibold hover:bg-accent hover:text-accent-foreground"
             >
               <l.icon className="size-5 text-muted-foreground" aria-hidden />
               {l.label}
             </Link>
           ))}
           <hr className="my-2" />
-          <ThemeToggle className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 font-medium hover:bg-muted [&_svg]:text-muted-foreground" />
+          <ThemeToggle className="flex min-h-12 w-full items-center gap-3 px-3 font-semibold hover:bg-accent hover:text-accent-foreground [&_svg]:text-muted-foreground" />
           {me ? (
             <button
               type="button"

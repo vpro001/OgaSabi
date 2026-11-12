@@ -21,6 +21,7 @@ import {
   Stars,
   TrustBadge,
   TrustBreakdown,
+  TrustGauge,
   VerifiedMark,
 } from "@/components/artisan/trust";
 import { ReportDialog } from "@/components/request/report-dialog";
@@ -154,7 +155,7 @@ export function ProfileView({ id }: { id: string }) {
         </Alert>
       )}
 
-      <header className="relative overflow-hidden card-surface p-5 sm:p-8">
+      <header className="relative overflow-hidden p-5 card-surface sm:p-8">
         <div
           className="pointer-events-none absolute inset-0 adire-pattern opacity-40"
           aria-hidden
@@ -164,9 +165,7 @@ export function ProfileView({ id }: { id: string }) {
           <div className="min-w-0 flex-1 space-y-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl leading-tight font-extrabold tracking-tight">
-                  {a.businessName}
-                </h1>
+                <h1 className="text-h1">{a.businessName}</h1>
                 {a.isAvailableNow && (
                   <Badge tone="success">
                     <Zap className="size-3 fill-current" aria-hidden /> Free now
@@ -235,7 +234,7 @@ export function ProfileView({ id }: { id: string }) {
                 <li key={c.id}>
                   <Link
                     href={`/search?category=${c.slug}`}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-muted px-3 text-sm font-semibold hover:bg-primary-container"
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-none bg-muted px-3 text-sm font-semibold hover:bg-primary-container"
                   >
                     <CategoryIcon iconKey={c.iconKey} className="size-4 text-secondary" />
                     {c.name}
@@ -303,9 +302,9 @@ export function ProfileView({ id }: { id: string }) {
                     {a.ratingDistribution.map((d) => (
                       <li key={d.star} className="flex items-center gap-2 text-xs tabular-nums">
                         <span className="w-3">{d.star}</span>
-                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                        <span className="h-1.5 flex-1 overflow-hidden rounded-none bg-muted">
                           <span
-                            className="block h-full rounded-full bg-accent"
+                            className="block h-full rounded-none bg-accent"
                             style={{
                               width: `${a.ratingCount ? (d.count / a.ratingCount) * 100 : 0}%`,
                             }}
@@ -389,7 +388,7 @@ export function ProfileView({ id }: { id: string }) {
               <p className="font-label text-xs font-bold tracking-wide text-muted-foreground uppercase">
                 Callout fee
               </p>
-              <p className="text-2xl font-extrabold">{price ?? "Ask for a quote"}</p>
+              <p className="font-display text-4xl leading-none">{price ?? "Ask for a quote"}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Covers the visit and diagnosis. The price for the work is agreed before it starts.
               </p>
@@ -404,13 +403,13 @@ export function ProfileView({ id }: { id: string }) {
           </Card>
 
           <Card>
-            <div className="flex items-end justify-between gap-3">
-              <h2 className="text-lg font-extrabold">Trust score</h2>
-              <p className="font-headline text-4xl leading-none font-black text-primary tabular-nums">
-                {Math.round(a.trustScore)}
-                <span className="text-base font-bold text-muted-foreground">/100</span>
-              </p>
-            </div>
+            <h2 className="ticket-label">Trust meter</h2>
+            <TrustGauge
+              score={a.trustScore}
+              tier={a.trustTier}
+              provisional={a.isProvisional}
+              className="mx-auto mt-2 max-w-64"
+            />
             {a.isProvisional && (
               <p className="mt-2 rounded-lg bg-warning/10 p-2.5 text-xs font-medium text-warning">
                 Provisional: fewer than 3 completed jobs on OgaSabi so far.
@@ -498,8 +497,8 @@ export function ProfileView({ id }: { id: string }) {
       </div>
 
       <Dialog open={!!photo} onClose={() => setPhoto(null)} title="Past work" className="max-w-3xl">
-        {/* eslint-disable-next-line @next/next/no-img-element -- storage-provider URLs */}
         {photo && (
+          // eslint-disable-next-line @next/next/no-img-element -- storage-provider URLs
           <img
             src={photo}
             alt="Past work, enlarged"
@@ -515,8 +514,8 @@ export function ProfileView({ id }: { id: string }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dd className="text-xl font-extrabold tabular-nums">{value}</dd>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-display text-4xl leading-none tabular-nums">{value}</dd>
+      <dt className="mt-1 ticket-label text-muted-foreground">{label}</dt>
     </div>
   );
 }

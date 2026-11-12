@@ -49,7 +49,7 @@ export default function HelpPage() {
       />
       <div className="space-y-2">
         {FAQ.map((f) => (
-          <details key={f.q} className="group card-surface px-5 py-1">
+          <details key={f.q} className="group px-5 py-1 card-surface">
             <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 font-bold [&::-webkit-details-marker]:hidden">
               {f.q}
               <span

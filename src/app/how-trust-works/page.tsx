@@ -52,7 +52,7 @@ export default function HowTrustWorksPage() {
       />
       <ol className="space-y-3">
         {Object.entries(MAX_POINTS).map(([key, max]) => (
-          <li key={key} className="flex gap-4 card-surface p-4">
+          <li key={key} className="flex gap-4 p-4 card-surface">
             <span className="w-14 shrink-0 text-center">
               <span className="block font-headline text-3xl font-black text-primary tabular-nums">
                 {max}
@@ -90,7 +90,7 @@ export default function HowTrustWorksPage() {
       <ul className="mt-4 space-y-2">
         {TIERS.map((t) => (
           <li key={t.name} className="flex items-center gap-3 rounded-xl border p-3">
-            <span className={`size-3 shrink-0 rounded-full ${t.cls}`} aria-hidden />
+            <span className={`size-3 shrink-0 rounded-none ${t.cls}`} aria-hidden />
             <span className="w-32 shrink-0 font-bold">{t.name}</span>
             <span className="text-sm text-muted-foreground">{t.rule}</span>
           </li>

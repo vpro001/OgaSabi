@@ -1,34 +1,31 @@
 import Link from "next/link";
-import { Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** The wordmark is set like a painted shop sign: a yellow plate, a hard shadow, no icon. */
 export function Logo({ className, inverted }: { className?: string; inverted?: boolean }) {
   return (
     <Link
       href="/"
-      className={cn("group inline-flex items-center gap-2.5", className)}
+      className={cn("group inline-flex items-stretch", className)}
       aria-label="OgaSabi home"
     >
-      <span className="flex size-10 items-center justify-center rounded-xl bg-[#032515] text-[#ffdcc3] shadow-md shadow-black/10 transition-transform group-hover:scale-105 dark:bg-primary-container dark:text-primary">
-        <Wrench className="size-5" aria-hidden />
+      <span
+        className={cn(
+          "flex items-center border-2 px-2 font-display text-2xl leading-none tracking-tight transition-transform group-hover:-rotate-2",
+          inverted
+            ? "border-paper bg-paper text-ink"
+            : "border-foreground bg-foreground text-background",
+        )}
+      >
+        OGA
       </span>
-      <span className="flex flex-col leading-none">
-        <span
-          className={cn(
-            "font-headline text-xl font-black tracking-tight",
-            inverted ? "text-white" : "text-primary",
-          )}
-        >
-          OgaSabi
-        </span>
-        <span
-          className={cn(
-            "font-label text-[9px] font-bold tracking-[0.2em] uppercase",
-            inverted ? "text-[#fe932c]" : "text-secondary",
-          )}
-        >
-          Trusted artisans
-        </span>
+      <span
+        className={cn(
+          "flex items-center border-2 border-l-0 bg-danfo px-2 font-display text-2xl leading-none tracking-tight text-ink transition-transform group-hover:rotate-2",
+          inverted ? "border-paper" : "border-foreground",
+        )}
+      >
+        SABI
       </span>
     </Link>
   );

@@ -63,3 +63,31 @@ The 3-step request form autosaves to the browser (IndexedDB/localStorage), not t
 ## ADR-015: Demo data is separate from reference data
 
 `npm run db:seed:reference` (categories) is safe everywhere, including production. Demo users, artisans and requests load only outside production (or with `ALLOW_DEMO_SEED=true`). The seed also writes an _interim_ denormalised trust score so search sorting is meaningful before Phase 5; the trust engine replaces it.
+
+## ADR-016: Sessions are httpOnly cookies on the web, bearer tokens on mobile
+
+Access token: 15-minute JWT (`og_at`). Refresh token: opaque, stored hashed, rotated on every use; presenting a rotated token revokes its whole family. The web client never sees either token. Requests with `X-Client-Type: mobile` also get the tokens in the body. Every API call re-reads the user row, so suspension takes effect immediately. Cookie-authenticated writes must carry a same-origin `Origin` (CSRF), on top of `SameSite=Lax`.
+
+## ADR-017: One transition endpoint, optimistic locking
+
+`POST /requests/:id/actions` takes `{ action, … }`; the table of legal moves is `TRANSITIONS` in `src/server/services/requests.ts`. Each move is an `UPDATE … WHERE version = ? AND status = ?` inside a transaction with its event and notification, so two people acting at once cannot both win. Jobs left in AWAITING_CONFIRMATION for 72 hours are confirmed by the system.
+
+## ADR-018: Chat and updates use polling, not SSE
+
+Messages poll every 6 s and request state every 15 s while the tab is visible. It works on every host (including serverless) and through flaky mobile proxies, at a cost that is small at this scale. Supersedes the SSE note on the `messages` index.
+
+## ADR-019: Storage is local disk (development) or S3-compatible (production); Cloudinary dropped
+
+Supersedes the `cloudinary` option. S3 is called through hand-written Signature V4 requests, so no SDK is bundled. Keys are `pub/<purpose>/<owner>/<uuid>.<ext>` or `priv/…`; files are identified by magic bytes, never by the client's content type; private files are reachable only through expiring signed URLs.
+
+## ADR-020: Email provider is Resend (or mock)
+
+Implements ADR-011. `EMAIL_PROVIDER=resend` with `RESEND_API_KEY`.
+
+## ADR-021: Strict CSP through `src/proxy.ts`
+
+A per-request nonce with `strict-dynamic`; no inline scripts except the theme bootstrap, which carries the nonce. `style-src` allows inline style attributes because measured widths (bars, gauge) need them. Every page is therefore rendered on demand, which suits a signed-in, data-driven app.
+
+## ADR-022: Visual language is "signwriter and job ticket"
+
+Paper, ink, danfo yellow, signwriter red; square corners, 2px rules, hard offset shadows; Archivo (condensed for headings) and JetBrains Mono, both self-hosted (updates ADR-012). The trust score is drawn as an analog meter. Tokens and the reusable utilities (`card-surface`, `field`, `ticket-label`, `stamp`, `hazard`, `pressable`) live in `src/app/globals.css`. Landing-page claims are generated from live data; nothing on the site states a certification, guarantee or figure the system cannot back up.

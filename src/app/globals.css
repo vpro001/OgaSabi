@@ -1,114 +1,123 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource-variable/plus-jakarta-sans/index.css";
-@import "@fontsource-variable/space-grotesk/index.css";
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/jetbrains-mono/index.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * OgaSabi design tokens — Nigerian artisan marketplace.
- * Palette: Deep emerald (trust, growth) + Gold/Amber (action, verification).
- * Fonts: Plus Jakarta Sans (headlines/body), Space Grotesk (labels/UI).
+ * OgaSabi design language: "signwriter and job ticket".
+ *
+ * Borrowed from things you see around Nigerian workshops: hand-painted shop signs, danfo-bus
+ * yellow with black stripes, carbon-copy receipt books, rubber stamps, the dial on a generator.
+ *  - Paper and ink. Two loud colours only: danfo yellow (action) and signwriter red (warning, stamps).
+ *  - Square corners, 2px ink rules, hard offset shadows. Nothing glows, nothing blurs.
+ *  - Type: Archivo at its narrowest and heaviest for poster headings, normal width for reading,
+ *    JetBrains Mono for anything that reads like a ticket: labels, numbers, references.
  */
 :root {
-  /* Core surfaces */
-  --background: #f4fbf6;
-  --foreground: #161d1a;
-  --card: #ffffff;
-  --card-foreground: #161d1a;
-  --muted: #e9f0eb;
-  --muted-foreground: #414942;
-  --border: #c1c9c0;
-  --input: #717972;
-  --ring: #032515;
+  --paper: #f1e9d6;
+  --ink: #14110f;
+  --danfo: #ffc21a;
+  --signal: #c2301c;
 
-  /* Brand: Emerald primary, Gold/Amber accent */
-  --primary: #032515;
-  --primary-foreground: #ffffff;
-  --primary-container: #bbefca;
-  --primary-container-foreground: #002110;
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #fbf6e9;
+  --card-foreground: var(--ink);
+  --muted: #e4dac2;
+  --muted-foreground: #5a5142;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: #1d3fbf; /* blue biro: a focus mark nobody can miss on paper or on yellow */
 
-  --accent: #fe932c;
-  --accent-foreground: #2f1500;
-  --accent-container: #ffdcc3;
-  --accent-container-foreground: #663500;
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --primary-container: #ffe38a;
+  --primary-container-foreground: var(--ink);
 
-  --secondary: #904d00;
-  --secondary-foreground: #ffffff;
-  --secondary-container: #fe932c;
-  --secondary-container-foreground: #2f1500;
+  --accent: var(--danfo);
+  --accent-foreground: var(--ink);
+  --accent-container: #ffd34f;
+  --accent-container-foreground: var(--ink);
 
-  /* Semantic */
-  --success: #1a7a47;
-  --success-foreground: #ffffff;
-  --warning: #9a5b00;
-  --warning-foreground: #ffffff;
-  --destructive: #ba1a1a;
-  --destructive-foreground: #ffffff;
-  --info: #032515;
-  --info-foreground: #ffffff;
+  --secondary: var(--signal);
+  --secondary-foreground: #fff8ea;
+  --secondary-container: var(--danfo);
+  --secondary-container-foreground: var(--ink);
 
-  /* Trust tiers */
-  --tier-new: #6b7a72;
-  --tier-trusted: #1a7a47;
-  --tier-highly-trusted: #0c6f7e;
-  --tier-top-rated: #b97a00;
+  --success: #0b6b43;
+  --success-foreground: #fff8ea;
+  --warning: #8a5300;
+  --warning-foreground: #fff8ea;
+  --destructive: var(--signal);
+  --destructive-foreground: #fff8ea;
+  --info: var(--ink);
+  --info-foreground: var(--paper);
 
-  /* Elevated surfaces */
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #eef5f0;
-  --surface-container: #e9f0eb;
-  --surface-container-high: #e3eae5;
-  --surface-container-highest: #dde4df;
+  --tier-new: #5a5142;
+  --tier-trusted: #0b6b43;
+  --tier-highly-trusted: #1d3fbf;
+  --tier-top-rated: #c2301c;
 
-  --radius: 0.75rem;
+  --surface-container-lowest: #fbf6e9;
+  --surface-container-low: #f1e9d6;
+  --surface-container: #e9dfc8;
+  --surface-container-high: #e4dac2;
+  --surface-container-highest: #d9ceb3;
+
+  --rule: 2px;
+  --radius: 0px;
 }
 
 .dark {
-  --background: #0a1410;
-  --foreground: #ebf2ed;
-  --card: #0f1c16;
-  --card-foreground: #ebf2ed;
-  --muted: #13241c;
-  --muted-foreground: #83a68f;
-  --border: #2b322f;
-  --input: #414942;
-  --ring: #a0d2af;
+  --paper: #ece3cd;
+  --ink: #110f0c;
 
-  --primary: #a0d2af;
-  --primary-foreground: #002110;
-  --primary-container: #0b3d24;
-  --primary-container-foreground: #78a888;
+  --background: #110f0c;
+  --foreground: #ece3cd;
+  --card: #1b1814;
+  --card-foreground: #ece3cd;
+  --muted: #27231c;
+  --muted-foreground: #b0a58c;
+  --border: #ece3cd;
+  --input: #ece3cd;
+  --ring: #8fa6ff;
 
-  --accent: #fe932c;
-  --accent-foreground: #2f1500;
-  --accent-container: #663500;
-  --accent-container-foreground: #ffdcc3;
+  --primary: #ece3cd;
+  --primary-foreground: #110f0c;
+  --primary-container: #4a3b08;
+  --primary-container-foreground: #ffe38a;
 
-  --secondary: #fe932c;
-  --secondary-foreground: #000000;
-  --secondary-container: #663500;
-  --secondary-container-foreground: #ffdcc3;
+  --accent: #ffc21a;
+  --accent-foreground: #110f0c;
+  --accent-container: #5a4500;
+  --accent-container-foreground: #ffe38a;
 
-  --success: #52c796;
-  --success-foreground: #05241a;
-  --warning: #f2b04d;
-  --warning-foreground: #2a1a00;
-  --destructive: #ff8b80;
-  --destructive-foreground: #3a0805;
-  --info: #a0d2af;
-  --info-foreground: #05241a;
+  --secondary: #ff7a62;
+  --secondary-foreground: #110f0c;
+  --secondary-container: #ffc21a;
+  --secondary-container-foreground: #110f0c;
 
-  --tier-new: #94a79c;
-  --tier-trusted: #52c796;
-  --tier-highly-trusted: #4fc3d4;
-  --tier-top-rated: #ffc247;
+  --success: #55d39b;
+  --success-foreground: #06281a;
+  --warning: #ffc21a;
+  --warning-foreground: #110f0c;
+  --destructive: #ff7a62;
+  --destructive-foreground: #110f0c;
+  --info: #ece3cd;
+  --info-foreground: #110f0c;
 
-  --surface-container-lowest: #0a1410;
-  --surface-container-low: #0f1c16;
-  --surface-container: #13241c;
-  --surface-container-high: #182a22;
-  --surface-container-highest: #1d322a;
+  --tier-new: #b0a58c;
+  --tier-trusted: #55d39b;
+  --tier-highly-trusted: #8fa6ff;
+  --tier-top-rated: #ff7a62;
+
+  --surface-container-lowest: #110f0c;
+  --surface-container-low: #1b1814;
+  --surface-container: #27231c;
+  --surface-container-high: #2f2a21;
+  --surface-container-highest: #393327;
 }
 
 @theme inline {
@@ -121,17 +130,19 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-danfo: var(--danfo);
+  --color-signal: var(--signal);
 
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-container: var(--primary-container);
   --color-primary-container-foreground: var(--primary-container-foreground);
-
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-container: var(--accent-container);
   --color-accent-container-foreground: var(--accent-container-foreground);
-
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary-container: var(--secondary-container);
@@ -156,34 +167,45 @@
   --color-surface-container: var(--surface-container);
   --color-surface-container-high: var(--surface-container-high);
   --color-surface-container-highest: var(--surface-container-highest);
-
   --color-on-surface: var(--foreground);
   --color-on-surface-variant: var(--muted-foreground);
   --color-outline: var(--input);
   --color-outline-variant: var(--border);
 
-  --font-display: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-headline: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-label: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Variable", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-headline: "Archivo Variable", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-label: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  --radius-xs: 0.375rem;
-  --radius-sm: 0.5rem;
-  --radius-md: var(--radius);
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  --radius-2xl: 2rem;
+  /* Square everything. `rounded-*` utilities stay in the markup but resolve to a hard corner. */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
 
-  /* Fluid type scale */
-  --text-display: clamp(2.5rem, 1.6rem + 3.6vw, 4.5rem);
-  --text-display--line-height: 1.02;
-  --text-display--letter-spacing: -0.03em;
-  --text-h1: clamp(2rem, 1.5rem + 2vw, 3rem);
-  --text-h1--line-height: 1.08;
-  --text-h1--letter-spacing: -0.025em;
-  --text-h2: clamp(1.5rem, 1.25rem + 1vw, 2rem);
-  --text-h2--line-height: 1.15;
-  --text-h2--letter-spacing: -0.02em;
+  /* Shadows are ink, offset, and never blurred. */
+  --shadow-xs: 2px 2px 0 var(--foreground);
+  --shadow-sm: 3px 3px 0 var(--foreground);
+  --shadow-md: 4px 4px 0 var(--foreground);
+  --shadow-lg: 6px 6px 0 var(--foreground);
+  --shadow-xl: 8px 8px 0 var(--foreground);
+  --shadow-2xl: 12px 12px 0 var(--foreground);
+
+  --text-display: clamp(3rem, 1.4rem + 6.6vw, 7.75rem);
+  --text-display--line-height: 0.84;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: clamp(2.5rem, 1.6rem + 4.2vw, 4.75rem);
+  --text-h1--line-height: 0.9;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h2: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  --text-h2--line-height: 0.92;
+  --text-h2--letter-spacing: -0.01em;
+
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-stamp: stamp 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
 
 @layer base {
@@ -192,25 +214,52 @@
   }
   html {
     -webkit-text-size-adjust: 100%;
-    scroll-padding-top: env(safe-area-inset-top, 0px);
+    scroll-padding-top: 5rem;
   }
   body {
-    background: var(--background);
+    background-color: var(--background);
+    /* Faint ledger rules: the page is a sheet from a receipt book. */
+    background-image: linear-gradient(
+      to bottom,
+      transparent 31px,
+      color-mix(in srgb, var(--foreground) 5%, transparent) 31px
+    );
+    background-size: 100% 32px;
     color: var(--foreground);
     font-family: var(--font-body);
     font-size: 1rem;
-    line-height: 1.6;
+    line-height: 1.55;
+    font-stretch: 100%;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+  }
+  /* Poster headings: Archivo squeezed to its narrowest and set in capitals, like a painted sign. */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-stretch: 62%;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    word-spacing: 0.14em;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+  a,
+  button,
+  summary {
+    -webkit-tap-highlight-color: transparent;
   }
   :focus-visible {
     outline: 3px solid var(--ring);
     outline-offset: 2px;
-    border-radius: var(--radius-xs);
   }
   ::selection {
-    background: var(--accent);
-    color: var(--accent-foreground);
+    background: var(--danfo);
+    color: #14110f;
+  }
+  hr {
+    border-top-width: var(--rule);
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -224,50 +273,21 @@
   }
 }
 
-@utility font-display {
-  font-family: var(--font-display);
-  font-weight: 800;
-}
-
-/* Shared field chrome for inputs, selects and textareas. */
-@utility field {
-  width: 100%;
-  min-height: 2.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--input);
-  background: var(--card);
-  padding: 0.625rem 0.875rem;
-  font-size: 1rem;
-  color: var(--foreground);
-  transition:
-    border-color 120ms,
-    box-shadow 120ms;
-  &::placeholder {
-    color: color-mix(in srgb, var(--muted-foreground) 70%, transparent);
-  }
-  &:focus-visible {
-    outline: none;
-    border-color: var(--ring);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
-  }
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  &[aria-invalid="true"] {
-    border-color: var(--destructive);
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
   }
 }
-
-@utility card-surface {
-  border-radius: var(--radius-lg);
-  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-  background: var(--card);
-  box-shadow:
-    0 1px 2px rgba(3, 37, 21, 0.04),
-    0 8px 24px -16px rgba(3, 37, 21, 0.12);
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: rotate(var(--stamp-tilt, -7deg)) scale(1.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(var(--stamp-tilt, -7deg)) scale(1);
+  }
 }
-
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -278,10 +298,14 @@
     transform: translateY(0);
   }
 }
+@keyframes needle-in {
+  from {
+    transform: rotate(-90deg);
+  }
+}
 
 dialog::backdrop {
-  background: rgba(3, 20, 12, 0.55);
-  backdrop-filter: blur(2px);
+  background: color-mix(in srgb, #14110f 72%, transparent);
 }
 
 /* 44px minimum touch target (WCAG 2.5.5 / Apple HIG). */
@@ -290,46 +314,139 @@ dialog::backdrop {
   min-width: 2.75rem;
 }
 
+@utility font-display {
+  font-family: var(--font-display);
+  font-stretch: 62%;
+  font-weight: 900;
+  text-transform: uppercase;
+  word-spacing: 0.14em;
+}
 @utility font-headline {
-  font-family: var(--font-headline);
+  font-family: var(--font-display);
+  font-stretch: 62%;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  word-spacing: 0.14em;
 }
 @utility font-label {
   font-family: var(--font-label);
+  letter-spacing: 0.01em;
 }
 @utility font-body {
   font-family: var(--font-body);
+  font-stretch: 100%;
+  text-transform: none;
 }
 
-/* Adire pattern background utility */
+/* Small mono caption used above headings and on tickets: "№ 04 / TRADES". */
+@utility ticket-label {
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Inputs, selects and textareas: a ruled box you write in. */
+@utility field {
+  width: 100%;
+  min-height: 3rem;
+  border: var(--rule) solid var(--input);
+  background: var(--card);
+  padding: 0.625rem 0.875rem;
+  font-size: 1rem;
+  color: var(--foreground);
+  transition:
+    box-shadow 100ms,
+    transform 100ms;
+  &::placeholder {
+    color: color-mix(in srgb, var(--muted-foreground) 75%, transparent);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: 4px 4px 0 var(--ring);
+    border-color: var(--ring);
+  }
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  &[aria-invalid="true"],
+  &[data-error="true"] {
+    border-color: var(--destructive);
+    box-shadow: 4px 4px 0 var(--destructive);
+  }
+}
+
+/* The basic sheet: lighter paper inside a 2px ink rule. */
+@utility card-surface {
+  border: var(--rule) solid var(--border);
+  background: var(--card);
+}
+
+/* Anything you can press lifts off the page and drops back when pressed. */
+@utility pressable {
+  transition:
+    transform 110ms ease-out,
+    box-shadow 110ms ease-out;
+  &:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 var(--foreground);
+  }
+  &:active {
+    transform: translate(0, 0);
+    box-shadow: 0 0 0 var(--foreground);
+  }
+}
+
+/* Danfo stripe: the black-and-yellow band painted along a Lagos bus. */
+@utility hazard {
+  background-image: repeating-linear-gradient(-45deg, #14110f 0 14px, #ffc21a 14px 28px);
+}
+
+/* Halftone dots, as on cheap newsprint. Kept under the old name so existing markup picks it up. */
 @utility adire-pattern {
-  background-image:
-    radial-gradient(rgba(187, 239, 202, 0.09) 1px, transparent 1px),
-    radial-gradient(rgba(254, 166, 25, 0.05) 1px, transparent 1px);
-  background-size: 32px 32px;
-  background-position:
-    0 0,
-    16px 16px;
+  background-image: radial-gradient(
+    color-mix(in srgb, currentColor 22%, transparent) 1.2px,
+    transparent 1.4px
+  );
+  background-size: 10px 10px;
 }
 
-/* Gold gradient text */
+/* A highlighter swipe behind the words that matter. */
 @utility gold-gradient-text {
-  background: linear-gradient(135deg, #ffd77d 0%, #fe932c 60%, #e87a10 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: var(--danfo);
+  color: #14110f;
+  padding: 0 0.12em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
-/* Emerald glow */
-@utility emerald-glow {
-  box-shadow: 0 0 40px -10px rgba(57, 104, 75, 0.45);
+/* Tear-off edge between the stub and the body of a ticket. */
+@utility perforation {
+  border-top: var(--rule) dashed var(--border);
 }
 
-/* Gold glow */
-@utility gold-glow {
-  box-shadow: 0 0 25px -4px rgba(254, 147, 44, 0.4);
+/* Rubber stamp: outlined, slightly crooked, pressed onto the page. */
+@utility stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border: 2.5px solid currentColor;
+  padding: 0.2em 0.55em;
+  font-family: var(--font-display);
+  font-stretch: 62%;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  transform: rotate(var(--stamp-tilt, -7deg));
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+  white-space: nowrap;
 }
 
-/* Scrollbar hide */
 @utility scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
