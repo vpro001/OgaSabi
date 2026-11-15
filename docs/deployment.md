@@ -50,7 +50,14 @@ Call with `Authorization: Bearer $CRON_SECRET` from any scheduler:
 
 `PAYMENTS_ENABLED=true` with `PAYSTACK_SECRET_KEY` turns on online callout deposits. Point the Paystack webhook at `POST /api/v1/webhooks/paystack`. OgaSabi does not hold payment for the job itself. This path has not been exercised against live Paystack; test it in Paystack test mode before enabling.
 
-## 6. Before launch
+## 6. Monetisation switches
+
+Both are off after a fresh install and are turned on in Admin → Monetisation, with no deploy (ADR-023):
+
+- **Service fee on callout deposits**: needs section 5 (payments) working first. Paystack's own charges come out of what you receive, so set the percentage with that in mind.
+- **Sponsored placement in search**: sponsor an artisan from Admin → Users, then turn the switch on.
+
+## 7. Before launch
 
 - Have a lawyer review `/terms` and `/privacy`; they are a sensible baseline, not legal advice.
 - Send one real SMS, one real email and one upload through the configured providers.

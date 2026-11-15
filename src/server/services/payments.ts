@@ -6,10 +6,14 @@ import { logger } from "@/server/logger";
 import { safeEqual } from "@/server/auth/tokens";
 import { type SessionUser } from "@/server/auth/session";
 import { createNotifications, deliverNotifications } from "@/server/services/notifications";
+import { getPlatformSettings } from "@/server/services/settings";
+import { serviceFeeKobo } from "@/lib/fees";
 import { type Prisma } from "@/generated/prisma/client";
 
 // Callout deposits through Paystack. Off unless PAYMENTS_ENABLED=true. OgaSabi does not hold
-// job payments: the deposit is the only money that moves through the platform.
+// job payments: the deposit is the only money that moves through the platform. When an
+// administrator switches the service fee on, the customer pays it on top of the deposit and it
+// is recorded per payment as `platformFeeKobo` (ADR-023).
 
 /** Starts a Paystack checkout for the callout deposit and returns the URL to send the customer to. */
 export async function startDeposit(
@@ -35,6 +39,9 @@ export async function startDeposit(
   if (!["ACCEPTED", "EN_ROUTE", "IN_PROGRESS", "AWAITING_CONFIRMATION"].includes(r.status)) {
     throw Errors.conflict("The deposit can be paid once the artisan has accepted the job.");
   }
+  // The fee is fixed at checkout: switching it on or off later never changes a started payment.
+  const feeKobo = serviceFeeKobo(r.calloutFeeKobo, await getPlatformSettings());
+  const amountKobo = r.calloutFeeKobo + feeKobo;
   const reference = `ogs_${randomUUID().replace(/-/g, "")}`;
   const email = user.email ?? `${user.id}@customers.ogasabi.invalid`;
   const res = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -45,11 +52,11 @@ export async function startDeposit(
     },
     body: JSON.stringify({
       email,
-      amount: r.calloutFeeKobo,
+      amount: amountKobo,
       currency: r.currency,
       reference,
       callback_url: `${env.APP_URL}/requests/${r.id}?paid=1`,
-      metadata: { requestId: r.id },
+      metadata: { requestId: r.id, depositKobo: r.calloutFeeKobo, serviceFeeKobo: feeKobo },
     }),
     signal: AbortSignal.timeout(15_000),
   });
@@ -71,7 +78,8 @@ export async function startDeposit(
       payerId: user.id,
       provider: "paystack",
       reference,
-      amountKobo: r.calloutFeeKobo,
+      amountKobo,
+      platformFeeKobo: feeKobo,
       currency: r.currency,
     },
   });
@@ -138,7 +146,7 @@ export async function handlePaystackWebhook(
         type: "PAYMENT_RECEIVED",
         actorId: payment.payerId,
         actorRole: "CUSTOMER",
-        metadata: { amountKobo: payment.amountKobo },
+        metadata: { amountKobo: payment.amountKobo, serviceFeeKobo: payment.platformFeeKobo },
       },
     });
     await tx.webhookEvent.updateMany({

@@ -22,6 +22,14 @@ export function ArtisanCard({ artisan, index }: { artisan: ArtisanCardData; inde
           )}
           <span className="truncate">{artisan.headline}</span>
         </p>
+        {artisan.isSponsored && (
+          <p
+            className="flex items-center border-l-2 bg-foreground px-2.5 ticket-label text-background"
+            title="This artisan pays to appear near the top of search. Their trust score is earned the same way as everyone else's."
+          >
+            Sponsored
+          </p>
+        )}
         {artisan.isAvailableNow && (
           <p className="flex items-center border-l-2 bg-success px-2.5 ticket-label text-success-foreground">
             Free now

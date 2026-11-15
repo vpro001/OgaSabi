@@ -23,19 +23,34 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v ? v : undefined));
 
-export const registerSchema = z
-  .object({
-    firstName: trimmed(1, 60, "First name"),
-    lastName: trimmed(1, 60, "Last name"),
-    email: optionalText(254).pipe(z.email("Enter a valid email address").optional()),
-    phone: optionalText(20),
-    password: passwordSchema,
-    acceptTerms: z.literal(true, "You must accept the terms to continue"),
-    marketingConsent: z.boolean().optional(),
-  })
-  .refine((v) => v.email || v.phone, {
-    path: ["email"],
-    message: "Enter an email address or a phone number",
+const registerFields = {
+  firstName: trimmed(1, 60, "First name"),
+  lastName: trimmed(1, 60, "Last name"),
+  email: optionalText(254).pipe(z.email("Enter a valid email address").optional()),
+  phone: optionalText(20),
+  password: passwordSchema,
+  acceptTerms: z.literal(true, "You must accept the terms to continue"),
+  marketingConsent: z.boolean().optional(),
+};
+const hasEmailOrPhone = (v: { email?: string; phone?: string }) => !!(v.email || v.phone);
+const emailOrPhoneIssue = {
+  path: ["email"],
+  message: "Enter an email address or a phone number",
+};
+
+// The "type it again" field exists only in the forms: it catches typos before the request is
+// sent, and the API (also used by the mobile app) never needs it.
+const confirmField = z.string().min(1, "Enter your password again");
+const mismatch = "The passwords do not match";
+
+export const registerSchema = z.object(registerFields).refine(hasEmailOrPhone, emailOrPhoneIssue);
+
+export const registerFormSchema = z
+  .object({ ...registerFields, confirmPassword: confirmField })
+  .refine(hasEmailOrPhone, emailOrPhoneIssue)
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: mismatch,
   });
 
 export const loginSchema = z.object({
@@ -45,19 +60,37 @@ export const loginSchema = z.object({
 
 export const forgotPasswordSchema = z.object({ identifier: trimmed(3, 254, "Email or phone") });
 
-export const resetPasswordSchema = z.object({
+const resetPasswordFields = {
   identifier: trimmed(3, 254, "Email or phone"),
   code: z
     .string()
     .trim()
     .regex(/^\d{6}$/, "Enter the 6-digit code"),
   password: passwordSchema,
-});
+};
 
-export const changePasswordSchema = z.object({
+export const resetPasswordSchema = z.object(resetPasswordFields);
+
+export const resetPasswordFormSchema = z
+  .object({ ...resetPasswordFields, confirmPassword: confirmField })
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: mismatch,
+  });
+
+const changePasswordFields = {
   currentPassword: z.string().min(1, "Enter your current password").max(128),
   newPassword: passwordSchema,
-});
+};
+
+export const changePasswordSchema = z.object(changePasswordFields);
+
+export const changePasswordFormSchema = z
+  .object({ ...changePasswordFields, confirmPassword: confirmField })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: mismatch,
+  });
 
 export const updateProfileSchema = z.object({
   firstName: trimmed(1, 60, "First name").optional(),
@@ -257,6 +290,7 @@ export const verificationSubmitSchema = z.object({
 });
 
 export type RegisterInput = z.input<typeof registerSchema>;
+export type RegisterFormInput = z.input<typeof registerFormSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateRequestInput = z.input<typeof createRequestSchema>;
 export type ArtisanProfileInput = z.infer<typeof artisanProfileSchema>;

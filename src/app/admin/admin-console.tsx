@@ -20,6 +20,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { useRequireAuth } from "@/hooks/use-auth";
 import { api, apiWithMeta, errorMessage } from "@/lib/api";
+import { MAX_SERVICE_FEE_BPS, MAX_SPONSORED_SLOTS, type PlatformSettings } from "@/lib/fees";
 import { formatDateTime, humanize } from "@/lib/format";
 import { formatMoney, formatRelativeTime } from "@/lib/locale";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ const TABS = [
   { id: "complaints", label: "Complaints", count: "openComplaints" },
   { id: "reports", label: "Reports", count: "openReports" },
   { id: "users", label: "Users" },
+  { id: "monetisation", label: "Monetisation" },
   { id: "audit", label: "Audit log" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -106,6 +108,7 @@ export function AdminConsole() {
         {tab === "complaints" && <ComplaintsPanel />}
         {tab === "reports" && <ReportsPanel />}
         {tab === "users" && <UsersPanel />}
+        {tab === "monetisation" && <MonetisationPanel />}
         {tab === "audit" && <AuditPanel />}
       </div>
     </div>
@@ -890,7 +893,14 @@ type AdminUser = {
   status: string;
   suspensionReason: string | null;
   createdAt: string;
-  artisan: { id: string; businessName: string; trustScore: number } | null;
+  artisan: {
+    id: string;
+    businessName: string;
+    trustScore: number;
+    status: string;
+    verificationLevel: string;
+    sponsoredUntil: string | null;
+  } | null;
   requestCount: number;
   complaintsAgainst: number;
 };
@@ -902,6 +912,7 @@ function UsersPanel() {
   const [term, setTerm] = useState("");
   const [target, setTarget] = useState<AdminUser | null>(null);
   const [reason, setReason] = useState("");
+  const [sponsoring, setSponsoring] = useState<SponsorTarget | null>(null);
   const query = useInfiniteQuery({
     queryKey: ["admin", "users", term],
     initialPageParam: "",
@@ -985,6 +996,11 @@ function UsersPanel() {
                         {u.artisan.businessName} · {Math.round(u.artisan.trustScore)}
                       </Link>
                     )}
+                    {isSponsoredNow(u.artisan?.sponsoredUntil) && (
+                      <Badge tone="warning" className="ml-2">
+                        Sponsored
+                      </Badge>
+                    )}
                   </th>
                   <td className="px-4 py-3 text-muted-foreground">
                     <span className="block">{u.email ?? "—"}</span>
@@ -1012,7 +1028,16 @@ function UsersPanel() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    {u.artisan && u.artisan.status === "ACTIVE" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => u.artisan && setSponsoring(u.artisan)}
+                      >
+                        Sponsor
+                      </Button>
+                    )}
                     {!u.roles.includes("ADMIN") && (
                       <Button
                         size="sm"
@@ -1080,6 +1105,302 @@ function UsersPanel() {
           </Button>
         </form>
       </Dialog>
+      <SponsorDialog target={sponsoring} onClose={() => setSponsoring(null)} />
+    </div>
+  );
+}
+
+// ── Monetisation ───────────────────────────────────────────────────────────────────────────
+
+type SponsorTarget = {
+  id: string;
+  businessName: string;
+  verificationLevel?: string;
+  sponsoredUntil: string | null;
+};
+
+type Monetisation = {
+  settings: PlatformSettings;
+  paymentsEnabled: boolean;
+  feesCollectedKobo: number;
+  feePayments: number;
+  sponsored: {
+    id: string;
+    businessName: string;
+    city: string | null;
+    status: string;
+    trustScore: number;
+    sponsoredUntil: string;
+  }[];
+};
+
+const isSponsoredNow = (until: string | null | undefined) =>
+  !!until && new Date(until).getTime() > Date.now();
+
+/** Starts, extends or ends one artisan's sponsored placement. */
+function SponsorDialog({ target, onClose }: { target: SponsorTarget | null; onClose: () => void }) {
+  const toast = useToast();
+  const invalidate = useInvalidateAdmin();
+  const [days, setDays] = useState("30");
+  const active = isSponsoredNow(target?.sponsoredUntil);
+  const save = useMutation({
+    mutationFn: (d: number) =>
+      api(`/admin/artisans/${target?.id}/sponsorship`, { method: "POST", body: { days: d } }),
+    onSuccess: (_data, d) => {
+      toast.success(d > 0 ? `Sponsored for ${d} days.` : "Sponsorship ended.");
+      onClose();
+      invalidate();
+    },
+  });
+  return (
+    <Dialog
+      open={!!target}
+      onClose={() => {
+        save.reset();
+        onClose();
+      }}
+      title={`Sponsor ${target?.businessName ?? ""}`}
+      description={
+        "They lead matching searches with a “Sponsored” label while sponsored placement is switched on. " +
+        "Their trust score does not change. Collect payment before you start; the app does not charge for this yet."
+      }
+    >
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save.mutate(Number(days));
+        }}
+      >
+        {active && target?.sponsoredUntil && (
+          <Alert tone="info">
+            Sponsored until {formatDateTime(target.sponsoredUntil)}. Saving replaces that date.
+          </Alert>
+        )}
+        <Field label="Run for" htmlFor="sponsor-days">
+          <Select id="sponsor-days" value={days} onChange={(e) => setDays(e.target.value)}>
+            <option value="7">7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+          </Select>
+        </Field>
+        {save.isError && <Alert tone="danger">{errorMessage(save.error)}</Alert>}
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={save.isPending}>
+            {save.isPending && <Spinner className="size-4" />}{" "}
+            {active ? "Replace sponsorship" : "Start sponsorship"}
+          </Button>
+          {active && (
+            <Button
+              type="button"
+              variant="outline"
+              className="text-destructive"
+              disabled={save.isPending}
+              onClick={() => save.mutate(0)}
+            >
+              End now
+            </Button>
+          )}
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+function MonetisationPanel() {
+  const toast = useToast();
+  const client = useQueryClient();
+  const [target, setTarget] = useState<SponsorTarget | null>(null);
+  const [feePercent, setFeePercent] = useState<string | null>(null);
+  const [slots, setSlots] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["admin", "monetisation"],
+    queryFn: () => api<Monetisation>("/admin/settings"),
+  });
+  const save = useMutation({
+    mutationFn: (next: PlatformSettings) =>
+      api<{ settings: PlatformSettings }>("/admin/settings", { method: "PUT", body: next }),
+    onSuccess: ({ settings }) => {
+      client.setQueryData<Monetisation>(["admin", "monetisation"], (old) =>
+        old ? { ...old, settings } : old,
+      );
+      setFeePercent(null);
+      setSlots(null);
+      toast.success("Saved. It applies from the next request.");
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  });
+
+  if (query.isPending) return <PageLoading />;
+  if (query.isError)
+    return <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} />;
+  const d = query.data;
+  const s = d.settings;
+  const percentText = feePercent ?? String(s.serviceFeeBps / 100);
+  const bps = Math.round(Number(percentText) * 100);
+  const bpsValid = percentText.trim() !== "" && bps >= 0 && bps <= MAX_SERVICE_FEE_BPS;
+  const slotsText = slots ?? String(s.sponsoredSlots);
+  const slotsValue = Number(slotsText);
+  const exampleFee = Math.round((500_000 * s.serviceFeeBps) / 10_000 / 100) * 100;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-lg font-extrabold">Service fee on callout deposits</h2>
+            <Badge tone={s.serviceFeeEnabled ? "success" : "neutral"}>
+              {s.serviceFeeEnabled ? "On" : "Off"}
+            </Badge>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Added on top of the deposit and shown to the customer before they pay. The artisan’s
+            deposit is not reduced. Example: on a {formatMoney(500_000)} deposit the customer pays{" "}
+            {formatMoney(exampleFee)} extra.
+          </p>
+          {!d.paymentsEnabled && (
+            <Alert tone="warning" className="mt-4">
+              Online deposits are switched off on this server (PAYMENTS_ENABLED), so no fee can be
+              charged yet. You can still set this up now.
+            </Alert>
+          )}
+          <form
+            className="mt-4 flex flex-wrap items-end gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (bpsValid) save.mutate({ ...s, serviceFeeBps: bps });
+            }}
+          >
+            <Field
+              label="Fee (% of deposit)"
+              htmlFor="fee-percent"
+              error={bpsValid ? undefined : `Enter 0 to ${MAX_SERVICE_FEE_BPS / 100}`}
+            >
+              <Input
+                id="fee-percent"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={MAX_SERVICE_FEE_BPS / 100}
+                step={0.5}
+                value={percentText}
+                invalid={!bpsValid}
+                onChange={(e) => setFeePercent(e.target.value)}
+                className="w-28"
+              />
+            </Field>
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={!bpsValid || bps === s.serviceFeeBps || save.isPending}
+            >
+              Save rate
+            </Button>
+          </form>
+          <Button
+            className="mt-4"
+            variant={s.serviceFeeEnabled ? "outline" : "default"}
+            disabled={save.isPending}
+            onClick={() => save.mutate({ ...s, serviceFeeEnabled: !s.serviceFeeEnabled })}
+          >
+            {s.serviceFeeEnabled ? "Turn service fee off" : "Turn service fee on"}
+          </Button>
+          <dl className="mt-5 grid grid-cols-2 gap-3 border-t pt-4 text-sm">
+            <div>
+              <dt className="text-muted-foreground">Fees collected</dt>
+              <dd className="font-headline text-2xl font-black tabular-nums">
+                {formatMoney(d.feesCollectedKobo)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Paid deposits with a fee</dt>
+              <dd className="font-headline text-2xl font-black tabular-nums">{d.feePayments}</dd>
+            </div>
+          </dl>
+        </Card>
+
+        <Card>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-lg font-extrabold">Sponsored placement in search</h2>
+            <Badge tone={s.sponsoredEnabled ? "success" : "neutral"}>
+              {s.sponsoredEnabled ? "On" : "Off"}
+            </Badge>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sponsored artisans who match a search lead the “Recommended” order, labelled
+            “Sponsored”. Sorting by distance, trust or rating is never changed, and neither is any
+            trust score. Sponsor an artisan from the Users tab.
+          </p>
+          <form
+            className="mt-4 flex flex-wrap items-end gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              save.mutate({ ...s, sponsoredSlots: slotsValue });
+            }}
+          >
+            <Field label="Sponsored places per search" htmlFor="sponsored-slots">
+              <Select
+                id="sponsored-slots"
+                value={slotsText}
+                onChange={(e) => setSlots(e.target.value)}
+                className="w-28"
+              >
+                {Array.from({ length: MAX_SPONSORED_SLOTS }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={slotsValue === s.sponsoredSlots || save.isPending}
+            >
+              Save
+            </Button>
+          </form>
+          <Button
+            className="mt-4"
+            variant={s.sponsoredEnabled ? "outline" : "default"}
+            disabled={save.isPending}
+            onClick={() => save.mutate({ ...s, sponsoredEnabled: !s.sponsoredEnabled })}
+          >
+            {s.sponsoredEnabled ? "Turn sponsored placement off" : "Turn sponsored placement on"}
+          </Button>
+        </Card>
+      </div>
+
+      <Card>
+        <h2 className="text-lg font-extrabold">Sponsored artisans ({d.sponsored.length})</h2>
+        {d.sponsored.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Nobody is sponsored. Find an artisan in the Users tab and choose Sponsor.
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y">
+            {d.sponsored.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <Link href={`/artisans/${a.id}`} className="font-bold hover:underline">
+                    {a.businessName}
+                  </Link>
+                  <p className="text-sm text-muted-foreground">
+                    {a.city ?? "No city"} · trust {Math.round(a.trustScore)} · until{" "}
+                    {formatDateTime(a.sponsoredUntil)}
+                    {a.status !== "ACTIVE" && ` · ${humanize(a.status)}, hidden from search`}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => setTarget(a)}>
+                  Change
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <SponsorDialog target={target} onClose={() => setTarget(null)} />
     </div>
   );
 }

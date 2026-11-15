@@ -5,6 +5,7 @@ import { Errors } from "@/server/http/errors";
 import { hmac } from "@/server/auth/tokens";
 import { deleteObject, isValidKey, keyOwner, publicUrl } from "@/server/providers/storage";
 import { audit, createNotifications, deliverNotifications } from "@/server/services/notifications";
+import { getPlatformSettings } from "@/server/services/settings";
 import { recomputeTrust, recomputeTrustSoon } from "@/server/trust/engine";
 import { MAX_POINTS, PROVISIONAL_BELOW_JOBS } from "@/server/trust/formula";
 import { normalizePhone } from "@/lib/phone";
@@ -69,10 +70,18 @@ type SearchRow = {
   distanceKm: number | null;
   headline: string | null;
   avatarKey: string | null;
+  isSponsored: boolean;
   total: number;
 };
 
-/** Nearest-first / best-first artisan search. Uses the PostGIS GiST index when it exists. */
+/**
+ * Nearest-first / best-first artisan search. Uses the PostGIS GiST index when it exists.
+ *
+ * Sponsored placement (ADR-023): when an administrator has switched it on, up to `sponsoredSlots`
+ * sponsored artisans who already match the search lead the "recommended" order, flagged
+ * `isSponsored` so the card can say so. An order the customer picked themselves (distance, trust,
+ * rating), favourites and the home page are never touched, and neither is any trust score.
+ */
 export async function searchArtisans(p: SearchParams) {
   const env = getEnv();
   const geo = p.lat != null && p.lng != null;
@@ -129,7 +138,7 @@ export async function searchArtisans(p: SearchParams) {
     );
   }
 
-  const order =
+  const baseOrder =
     p.sort === "distance" && geo
       ? Prisma.sql`"distanceKm" ASC NULLS LAST, a."trustScore" DESC`
       : p.sort === "rating"
@@ -139,6 +148,17 @@ export async function searchArtisans(p: SearchParams) {
           : // Recommended: trust, minus a small penalty per km, plus a boost for being free right now.
             Prisma.sql`(a."trustScore" - LEAST(${distance}, 50) * 0.8 + CASE WHEN ${availableExpr} THEN 6 ELSE 0 END) DESC, a."id" DESC`;
 
+  const settings = p.sort === "recommended" && !p.favoritesOf ? await getPlatformSettings() : null;
+  const sponsoredExpr = Prisma.sql`(a."sponsoredUntil" IS NOT NULL AND a."sponsoredUntil" > now())`;
+  // The window ranks sponsored artisans among themselves in the normal order, so the slots go
+  // to the ones this customer would have ranked highest anyway.
+  const isSponsored = settings?.sponsoredEnabled
+    ? Prisma.sql`(${sponsoredExpr} AND ROW_NUMBER() OVER (PARTITION BY ${sponsoredExpr} ORDER BY ${baseOrder}) <= ${settings.sponsoredSlots})`
+    : Prisma.sql`false`;
+  const order = settings?.sponsoredEnabled
+    ? Prisma.sql`"isSponsored" DESC, ${baseOrder}`
+    : baseOrder;
+
   const rows = await db.$queryRaw<SearchRow[]>`
     SELECT a."id", a."businessName", a."areaLabel", a."city", a."trustScore", a."trustTier", a."verificationLevel",
       a."completedJobsCount", a."ratingAverage", a."ratingCount", a."calloutMinKobo", a."calloutMaxKobo",
@@ -147,6 +167,7 @@ export async function searchArtisans(p: SearchParams) {
       (SELECT c."name" FROM "artisan_categories" ac JOIN "categories" c ON c."id" = ac."categoryId"
         WHERE ac."artisanId" = a."id" ORDER BY ac."isPrimary" DESC, c."sortOrder" ASC LIMIT 1) AS "headline",
       u."avatarKey",
+      ${isSponsored} AS "isSponsored",
       COUNT(*) OVER()::int AS "total"
     FROM "artisan_profiles" a JOIN "users" u ON u."id" = a."userId"
     WHERE ${Prisma.join(where, " AND ")}
@@ -176,6 +197,7 @@ export async function searchArtisans(p: SearchParams) {
       yearsExperience: r.yearsExperience,
       distanceKm: r.distanceKm == null ? null : Math.round(r.distanceKm * 10) / 10,
       avatarUrl: r.avatarKey ? publicUrl(r.avatarKey) : null,
+      isSponsored: r.isSponsored,
     })),
   };
 }

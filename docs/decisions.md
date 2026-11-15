@@ -91,3 +91,10 @@ A per-request nonce with `strict-dynamic`; no inline scripts except the theme bo
 ## ADR-022: Visual language is "signwriter and job ticket"
 
 Paper, ink, danfo yellow, signwriter red; square corners, 2px rules, hard offset shadows; Archivo (condensed for headings) and JetBrains Mono, both self-hosted (updates ADR-012). The trust score is drawn as an analog meter. Tokens and the reusable utilities (`card-surface`, `field`, `ticket-label`, `stamp`, `hazard`, `pressable`) live in `src/app/globals.css`. Landing-page claims are generated from live data; nothing on the site states a certification, guarantee or figure the system cannot back up.
+
+## ADR-023: Monetisation is two admin switches, both off by default
+
+Launch is free. Two revenue paths are built and wait behind switches in Admin → Monetisation, stored in the one-row `platform_settings` table and read on every request, so flipping one needs no deploy and applies on every instance at once. Every change is written to `audit_logs`.
+
+- **Service fee on the callout deposit.** A percentage (`serviceFeeBps`, capped at 30%) rounded to a whole naira, paid by the customer _on top of_ the deposit and shown as its own line before checkout; the artisan's deposit is never reduced. The fee is fixed when checkout starts and stored as `payments.platformFeeKobo` (`amountKobo` is the total charged). It only applies where online deposits are on (`PAYMENTS_ENABLED`).
+- **Sponsored placement.** An administrator sponsors an artisan for a number of days (`artisan_profiles.sponsoredUntil`); payment for that is collected outside the app for now. While the switch is on, up to `sponsoredSlots` sponsored artisans who already match a search lead the "Recommended" order, marked "Sponsored". Orders the customer chooses (distance, trust, rating), favourites and the home page are untouched. Only active, ID-verified artisans can be sponsored, and the trust engine never reads `sponsoredUntil`: money buys position, never score.

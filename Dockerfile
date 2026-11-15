@@ -13,6 +13,17 @@ RUN npm ci
 FROM deps AS build
 COPY . .
 RUN npx prisma generate
+# NEXT_PUBLIC_* values are baked into the browser bundle here, so they must be build arguments.
+# Hosts such as Render pass a service's environment variables as build arguments automatically;
+# with plain Docker use --build-arg. Left unset, the defaults in the code apply.
+ARG NEXT_PUBLIC_SUPPORT_EMAIL
+ARG NEXT_PUBLIC_SUPPORT_PHONE
+ARG NEXT_PUBLIC_LEGAL_ENTITY
+ARG NEXT_PUBLIC_DEFAULT_LOCALE
+ARG NEXT_PUBLIC_DEFAULT_CURRENCY
+ARG NEXT_PUBLIC_DEFAULT_COUNTRY
+ARG NEXT_PUBLIC_DEFAULT_CALLING_CODE
+ARG NEXT_PUBLIC_DEFAULT_TIMEZONE
 # Real values are validated at boot, not at build time.
 RUN SKIP_ENV_VALIDATION=1 npm run build
 

@@ -36,7 +36,11 @@ const FAQ = [
   },
   {
     q: "How do I pay?",
-    a: "Pay the artisan directly, by transfer or cash, once you are satisfied. Where callout deposits are switched on you can pay the deposit online through Paystack; it counts towards the final price. OgaSabi does not hold the payment for the job itself.",
+    a: "Pay the artisan directly, by transfer or cash, once you are satisfied. Where callout deposits are switched on you can pay the deposit online through Paystack; it counts towards the final price. If an OgaSabi service fee applies, it is shown separately before you pay and is not part of the artisan's price. OgaSabi does not hold the payment for the job itself.",
+  },
+  {
+    q: "What does “Sponsored” mean on a search result?",
+    a: "The artisan pays to appear near the top of the recommended list. Only ID-verified artisans can be sponsored, and it never changes their trust score, reviews or rating. Sort by trust, distance or rating to see results with no sponsored placement.",
   },
 ];
 

@@ -15,9 +15,9 @@ import { Field, Input } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { ME_KEY, useRequireAuth } from "@/hooks/use-auth";
 import { api, errorMessage, uploadFile } from "@/lib/api";
-import { applyServerErrors } from "@/lib/forms";
+import { applyServerErrors, withoutConfirm } from "@/lib/forms";
 import { humanize } from "@/lib/format";
-import { changePasswordSchema } from "@/lib/schemas";
+import { changePasswordFormSchema } from "@/lib/schemas";
 import { type Me } from "@/lib/types";
 
 type Pref = { type: string; sms: boolean; email: boolean };
@@ -267,12 +267,12 @@ function PasswordCard() {
   const toast = useToast();
   const [formError, setFormError] = useState<string | null>(null);
   const { register, handleSubmit, setError, reset, formState } = useForm<
-    z.infer<typeof changePasswordSchema>
-  >({ resolver: zodResolver(changePasswordSchema) });
+    z.infer<typeof changePasswordFormSchema>
+  >({ resolver: zodResolver(changePasswordFormSchema) });
   const submit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await api("/auth/password/change", { method: "POST", body: values });
+      await api("/auth/password/change", { method: "POST", body: withoutConfirm(values) });
       reset();
       toast.success("Password changed. Other devices were signed out.");
     } catch (err) {
@@ -311,6 +311,18 @@ function PasswordCard() {
             autoComplete="new-password"
             invalid={!!formState.errors.newPassword}
             {...register("newPassword")}
+          />
+        </Field>
+        <Field
+          label="Confirm new password"
+          htmlFor="p-confirm"
+          error={formState.errors.confirmPassword?.message}
+        >
+          <PasswordInput
+            id="p-confirm"
+            autoComplete="new-password"
+            invalid={!!formState.errors.confirmPassword}
+            {...register("confirmPassword")}
           />
         </Field>
         <Button type="submit" variant="outline" disabled={formState.isSubmitting}>

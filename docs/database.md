@@ -17,6 +17,7 @@ PostgreSQL 14+ with PostGIS (recommended) and `pg_trgm`. 29 tables; migrations a
 - **Trust & safety**: `reviews`, `complaints`, `disputes`, `evidence_files`, `reports`, `trust_score_snapshots`
 - **Notifications**: `notifications`, `notification_deliveries`, `notification_preferences`
 - **Payments** (flagged off): `payments`, `webhook_events`
+- **Monetisation** (switched off): `platform_settings` (one row), `artisan_profiles.sponsoredUntil`, `payments.platformFeeKobo`; see ADR-023
 - **Platform**: `audit_logs` (append-only), `idempotency_keys`
 
 ## Delete rules

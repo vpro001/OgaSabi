@@ -414,12 +414,21 @@ export function RequestView({ id }: { id: string }) {
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
                   <div>
                     <p className="font-bold">Callout deposit: {formatMoney(r.calloutFeeKobo)}</p>
+                    {r.payment.serviceFeeKobo > 0 && (
+                      <p className="text-sm font-semibold">
+                        + OgaSabi service fee: {formatMoney(r.payment.serviceFeeKobo)}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground">
-                      Paid securely through Paystack. It counts towards the final price.
+                      Paid securely through Paystack. The deposit counts towards the final price
+                      {r.payment.serviceFeeKobo > 0 ? "; the service fee does not." : "."}
                     </p>
                   </div>
                   <Button disabled={pay.isPending} onClick={() => pay.mutate()}>
-                    {pay.isPending && <Spinner className="size-4" />} Pay deposit
+                    {pay.isPending && <Spinner className="size-4" />} Pay{" "}
+                    {r.payment.serviceFeeKobo > 0
+                      ? formatMoney(r.calloutFeeKobo + r.payment.serviceFeeKobo)
+                      : "deposit"}
                   </Button>
                 </div>
               )}

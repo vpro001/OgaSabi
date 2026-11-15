@@ -10,7 +10,9 @@ import {
   deliverNotifications,
   type NotifyInput,
 } from "@/server/services/notifications";
+import { getPlatformSettings } from "@/server/services/settings";
 import { recomputeTrustSoon } from "@/server/trust/engine";
+import { serviceFeeKobo } from "@/lib/fees";
 import { coarseKm, haversineKm } from "@/lib/geo";
 import { formatMoney } from "@/lib/locale";
 import {
@@ -434,6 +436,19 @@ export async function getRequest(user: SessionUser, id: string) {
       !!r.completedAt &&
       now - r.completedAt.getTime() < DISPUTE_WINDOW_HOURS * 3_600_000);
   const paid = r.payments[0]?.status === "SUCCEEDED";
+  const depositDue =
+    getEnv().PAYMENTS_ENABLED &&
+    role === "CUSTOMER" &&
+    !!r.calloutFeeKobo &&
+    !paid &&
+    ACTIVE_JOB.includes(r.status) &&
+    r.status !== "DISPUTED";
+  // What the customer will be (or was) charged on top of the deposit.
+  const serviceFee = paid
+    ? (r.payments[0]?.platformFeeKobo ?? 0)
+    : depositDue
+      ? serviceFeeKobo(r.calloutFeeKobo ?? 0, await getPlatformSettings())
+      : 0;
 
   return {
     ...toSummary(r, role),
@@ -509,14 +524,9 @@ export async function getRequest(user: SessionUser, id: string) {
     unreadMessages: unread,
     payment: {
       enabled: getEnv().PAYMENTS_ENABLED,
-      depositDue:
-        getEnv().PAYMENTS_ENABLED &&
-        role === "CUSTOMER" &&
-        !!r.calloutFeeKobo &&
-        !paid &&
-        ACTIVE_JOB.includes(r.status) &&
-        r.status !== "DISPUTED",
+      depositDue,
       depositPaid: paid,
+      serviceFeeKobo: serviceFee,
     },
   };
 }

@@ -22,3 +22,12 @@ export function applyServerErrors<T extends FieldValues>(
   }
   return "Something went wrong. Please try again.";
 }
+
+/** Drops the form-only "type it again" field, so the API gets exactly what it expects. */
+export function withoutConfirm<T extends { confirmPassword: string }>(
+  values: T,
+): Omit<T, "confirmPassword"> {
+  const body: Partial<T> = { ...values };
+  delete body.confirmPassword;
+  return body as Omit<T, "confirmPassword">;
+}

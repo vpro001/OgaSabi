@@ -13,8 +13,8 @@ import { Alert, Spinner } from "@/components/ui/feedback";
 import { Checkbox, Field, Input } from "@/components/ui/form";
 import { ME_KEY } from "@/hooks/use-auth";
 import { api } from "@/lib/api";
-import { applyServerErrors, safeNext } from "@/lib/forms";
-import { registerSchema, type RegisterInput } from "@/lib/schemas";
+import { applyServerErrors, safeNext, withoutConfirm } from "@/lib/forms";
+import { registerFormSchema, type RegisterFormInput } from "@/lib/schemas";
 import { type Me } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -26,8 +26,8 @@ export function RegisterForm({ emailRequired = false }: { emailRequired?: boolea
   const [asArtisan, setAsArtisan] = useState(
     params.get("as") === "artisan" || params.get("next")?.startsWith("/artisan") === true,
   );
-  const { register, handleSubmit, setError, formState } = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
+  const { register, handleSubmit, setError, formState } = useForm<RegisterFormInput>({
+    resolver: zodResolver(registerFormSchema),
   });
   const { errors, isSubmitting } = formState;
   const next = safeNext(params.get("next"), "");
@@ -35,7 +35,10 @@ export function RegisterForm({ emailRequired = false }: { emailRequired?: boolea
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      const { user } = await api<{ user: Me }>("/auth/register", { method: "POST", body: values });
+      const { user } = await api<{ user: Me }>("/auth/register", {
+        method: "POST",
+        body: withoutConfirm(values),
+      });
       client.clear();
       client.setQueryData(ME_KEY, user);
       router.replace(asArtisan ? "/artisan/onboarding" : next || "/search");
@@ -145,6 +148,18 @@ export function RegisterForm({ emailRequired = false }: { emailRequired?: boolea
             autoComplete="new-password"
             invalid={!!errors.password}
             {...register("password")}
+          />
+        </Field>
+        <Field
+          label="Confirm password"
+          htmlFor="confirmPassword"
+          error={errors.confirmPassword?.message}
+        >
+          <PasswordInput
+            id="confirmPassword"
+            autoComplete="new-password"
+            invalid={!!errors.confirmPassword}
+            {...register("confirmPassword")}
           />
         </Field>
         <div className="space-y-1">

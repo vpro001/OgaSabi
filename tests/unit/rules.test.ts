@@ -3,7 +3,14 @@ import { allowedActions } from "@/server/services/requests";
 import { enforceRateLimit, resetRateLimits } from "@/server/rate-limit";
 import { AppError } from "@/server/http/errors";
 import { isValidKey, keyOwner, sniffFile } from "@/server/providers/storage";
-import { createRequestSchema, registerSchema } from "@/lib/schemas";
+import {
+  changePasswordFormSchema,
+  createRequestSchema,
+  registerFormSchema,
+  registerSchema,
+  resetPasswordFormSchema,
+} from "@/lib/schemas";
+import { serviceFeeKobo } from "@/lib/fees";
 import { safeNext } from "@/lib/forms";
 import { coarseKm, haversineKm } from "@/lib/geo";
 
@@ -84,6 +91,46 @@ describe("validation", () => {
       registerSchema.safeParse({ ...ok, email: "ada@example.com", password: "short" }).success,
     ).toBe(false);
   });
+  it("makes the forms confirm the password, but not the API", () => {
+    const account = {
+      firstName: "Ada",
+      lastName: "Obi",
+      email: "ada@example.com",
+      password: "Passw0rd!",
+      acceptTerms: true as const,
+    };
+    const issuePaths = (r: { error?: { issues: { path: PropertyKey[] }[] } }) =>
+      r.error?.issues.map((i) => i.path.join("."));
+
+    expect(registerSchema.safeParse(account).success).toBe(true);
+    expect(registerFormSchema.safeParse({ ...account, confirmPassword: "Passw0rd!" }).success).toBe(
+      true,
+    );
+    expect(issuePaths(registerFormSchema.safeParse(account))).toEqual(["confirmPassword"]);
+    expect(
+      issuePaths(registerFormSchema.safeParse({ ...account, confirmPassword: "Passw0rd?" })),
+    ).toEqual(["confirmPassword"]);
+    // Case and trailing spaces count as a difference.
+    expect(
+      registerFormSchema.safeParse({ ...account, confirmPassword: "passw0rd! " }).success,
+    ).toBe(false);
+
+    const reset = { identifier: "ada@example.com", code: "123456", password: "Passw0rd!" };
+    expect(
+      resetPasswordFormSchema.safeParse({ ...reset, confirmPassword: "Passw0rd!" }).success,
+    ).toBe(true);
+    expect(
+      issuePaths(resetPasswordFormSchema.safeParse({ ...reset, confirmPassword: "Passw0rd1" })),
+    ).toEqual(["confirmPassword"]);
+
+    const change = { currentPassword: "old-Passw0rd", newPassword: "Passw0rd!" };
+    expect(
+      changePasswordFormSchema.safeParse({ ...change, confirmPassword: "Passw0rd!" }).success,
+    ).toBe(true);
+    expect(
+      issuePaths(changePasswordFormSchema.safeParse({ ...change, confirmPassword: "nope" })),
+    ).toEqual(["confirmPassword"]);
+  });
   it("needs a time unless the job is immediate", () => {
     const req = {
       artisanId: "019af430-14d7-7fad-a49b-feaef6102ad9",
@@ -113,5 +160,18 @@ describe("geo", () => {
   it("coarsens distances to half kilometres", () => {
     expect(coarseKm(2.26)).toBe(2.5);
     expect(coarseKm(0.1)).toBe(0.5);
+  });
+});
+
+describe("service fee", () => {
+  const on = { serviceFeeEnabled: true, serviceFeeBps: 500 };
+  it("is nothing while switched off", () => {
+    expect(serviceFeeKobo(500_000, { ...on, serviceFeeEnabled: false })).toBe(0);
+  });
+  it("is a share of the deposit, rounded to a whole naira", () => {
+    expect(serviceFeeKobo(500_000, on)).toBe(25_000);
+    expect(serviceFeeKobo(333_300, on)).toBe(16_700);
+    expect(serviceFeeKobo(500_000, { ...on, serviceFeeBps: 750 })).toBe(37_500);
+    expect(serviceFeeKobo(0, on)).toBe(0);
   });
 });

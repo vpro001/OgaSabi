@@ -443,6 +443,8 @@ model ArtisanProfile {
   ratingAverage         Float?
   ratingCount           Int               @default(0)
   trustComputedAt       DateTime?
+  // Paid placement, granted by an administrator. Never read by the trust engine.
+  sponsoredUntil        DateTime?
   deletedAt             DateTime?
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
@@ -466,6 +468,7 @@ model ArtisanProfile {
   @@index([status, lat, lng])
   @@index([status, trustScore(sort: Desc)])
   @@index([city, status])
+  @@index([sponsoredUntil])
   @@index([location], type: Gist, map: "artisan_profiles_location_gist_idx")
   @@index([businessName(ops: raw("gin_trgm_ops"))], type: Gin, map: "artisan_profiles_businessName_trgm_idx")
   @@map("artisan_profiles")
@@ -892,7 +895,8 @@ model Payment {
   provider        String // "paystack"
   reference       String         @unique
   purpose         PaymentPurpose @default(CALLOUT_DEPOSIT)
-  amountKobo      Int
+  amountKobo      Int // total charged, service fee included
+  platformFeeKobo Int            @default(0) // the part of amountKobo OgaSabi keeps
   currency        String         @default("NGN")
   status          PaymentStatus  @default(PENDING)
   providerPayload Json?
@@ -909,6 +913,18 @@ model Payment {
 }
 
 // Dedupes provider webhooks (Paystack retries).
+// One row (id = 1): the switches an administrator can flip without a deploy.
+model PlatformSettings {
+  id                Int      @id @default(1)
+  serviceFeeEnabled Boolean  @default(false)
+  serviceFeeBps     Int      @default(500) // basis points of the callout deposit; 500 = 5%
+  sponsoredEnabled  Boolean  @default(false)
+  sponsoredSlots    Int      @default(2) // how many sponsored artisans may lead a search
+  updatedAt         DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
 model WebhookEvent {
   id          String    @id @default(uuid(7)) @db.Uuid
   provider    String

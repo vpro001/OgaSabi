@@ -604,6 +604,7 @@ export async function listUsers(q: string | undefined, cursor: string | undefine
           trustScore: true,
           verificationLevel: true,
           status: true,
+          sponsoredUntil: true,
         },
       },
       _count: { select: { customerRequests: true, complaintsAgainst: true } },

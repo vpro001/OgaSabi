@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Alert, Spinner } from "@/components/ui/feedback";
 import { Field, Input } from "@/components/ui/form";
 import { api } from "@/lib/api";
-import { applyServerErrors } from "@/lib/forms";
-import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/schemas";
+import { applyServerErrors, withoutConfirm } from "@/lib/forms";
+import { forgotPasswordSchema, resetPasswordFormSchema } from "@/lib/schemas";
 import { type z } from "zod";
 
 type Step1 = z.infer<typeof forgotPasswordSchema>;
-type Step2 = z.infer<typeof resetPasswordSchema>;
+type Step2 = z.infer<typeof resetPasswordFormSchema>;
 
 /** Two steps on one page: ask for a code, then enter it with the new password. */
 export function ForgotPasswordFlow({ emailOnly = false }: { emailOnly?: boolean }) {
@@ -24,7 +24,7 @@ export function ForgotPasswordFlow({ emailOnly = false }: { emailOnly?: boolean 
   const [devCode, setDevCode] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const first = useForm<Step1>({ resolver: zodResolver(forgotPasswordSchema) });
-  const second = useForm<Step2>({ resolver: zodResolver(resetPasswordSchema) });
+  const second = useForm<Step2>({ resolver: zodResolver(resetPasswordFormSchema) });
 
   const requestCode = first.handleSubmit(async (values) => {
     setFormError(null);
@@ -35,7 +35,7 @@ export function ForgotPasswordFlow({ emailOnly = false }: { emailOnly?: boolean 
       });
       setDevCode(res.devCode ?? null);
       setIdentifier(values.identifier);
-      second.reset({ identifier: values.identifier, code: "", password: "" });
+      second.reset({ identifier: values.identifier, code: "", password: "", confirmPassword: "" });
     } catch (err) {
       setFormError(applyServerErrors(err, first.setError, ["identifier"]));
     }
@@ -44,7 +44,7 @@ export function ForgotPasswordFlow({ emailOnly = false }: { emailOnly?: boolean 
   const reset = second.handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await api("/auth/password/reset", { method: "POST", body: values });
+      await api("/auth/password/reset", { method: "POST", body: withoutConfirm(values) });
       router.replace("/login?reset=1");
     } catch (err) {
       setFormError(applyServerErrors(err, second.setError, ["code", "password"]));
@@ -124,6 +124,18 @@ export function ForgotPasswordFlow({ emailOnly = false }: { emailOnly?: boolean 
               autoComplete="new-password"
               invalid={!!second.formState.errors.password}
               {...second.register("password")}
+            />
+          </Field>
+          <Field
+            label="Confirm new password"
+            htmlFor="confirmPassword"
+            error={second.formState.errors.confirmPassword?.message}
+          >
+            <PasswordInput
+              id="confirmPassword"
+              autoComplete="new-password"
+              invalid={!!second.formState.errors.confirmPassword}
+              {...second.register("confirmPassword")}
             />
           </Field>
           <Button

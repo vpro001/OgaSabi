@@ -76,6 +76,8 @@ export type ArtisanCardData = {
   yearsExperience: number;
   distanceKm: number | null;
   avatarUrl: string | null;
+  /** Paid placement at the top of this search. Never affects the trust score. */
+  isSponsored: boolean;
 };
 
 export type Slot = { dayOfWeek: number; startMinute: number; endMinute: number };
@@ -273,7 +275,13 @@ export type RequestDetail = RequestSummary & {
   canReplyToReview: boolean;
   canDispute: boolean;
   canComplain: boolean;
-  payment: { enabled: boolean; depositDue: boolean; depositPaid: boolean };
+  payment: {
+    enabled: boolean;
+    depositDue: boolean;
+    depositPaid: boolean;
+    /** Charged to the customer on top of the deposit; 0 while the fee is switched off. */
+    serviceFeeKobo: number;
+  };
 };
 
 export type ChatMessage = {
