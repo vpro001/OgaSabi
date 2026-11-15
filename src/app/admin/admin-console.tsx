@@ -1,14 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleCheck, ExternalLink, Search } from "lucide-react";
+import {
+  BadgeCheck,
+  Banknote,
+  CircleCheck,
+  ExternalLink,
+  Flag,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquareWarning,
+  Scale,
+  ScrollText,
+  Search,
+  Users,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { Logo } from "@/components/site/logo";
+import { ThemeToggle } from "@/components/site/theme-toggle";
 import {
   Alert,
+  Avatar,
   Badge,
   Card,
   EmptyState,
@@ -18,7 +36,7 @@ import {
 } from "@/components/ui/feedback";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
-import { useRequireAuth } from "@/hooks/use-auth";
+import { useRequireAuth, useSignOut } from "@/hooks/use-auth";
 import { api, apiWithMeta, errorMessage } from "@/lib/api";
 import { MAX_SERVICE_FEE_BPS, MAX_SPONSORED_SLOTS, type PlatformSettings } from "@/lib/fees";
 import { formatDateTime, humanize } from "@/lib/format";
@@ -26,14 +44,19 @@ import { formatMoney, formatRelativeTime } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "verifications", label: "Verifications", count: "pendingVerifications" },
-  { id: "disputes", label: "Disputes", count: "openDisputes" },
-  { id: "complaints", label: "Complaints", count: "openComplaints" },
-  { id: "reports", label: "Reports", count: "openReports" },
-  { id: "users", label: "Users" },
-  { id: "monetisation", label: "Monetisation" },
-  { id: "audit", label: "Audit log" },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  {
+    id: "verifications",
+    label: "Verifications",
+    icon: BadgeCheck,
+    count: "pendingVerifications",
+  },
+  { id: "disputes", label: "Disputes", icon: Scale, count: "openDisputes" },
+  { id: "complaints", label: "Complaints", icon: MessageSquareWarning, count: "openComplaints" },
+  { id: "reports", label: "Reports", icon: Flag, count: "openReports" },
+  { id: "users", label: "Users", icon: Users },
+  { id: "monetisation", label: "Monetisation", icon: Banknote },
+  { id: "audit", label: "Audit log", icon: ScrollText },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -49,11 +72,18 @@ type Overview = {
   requestsByStatus: Record<string, number>;
 };
 
+/**
+ * The admin area has its own frame, separate from the public site: a dark sidebar that stays put,
+ * a slim top bar, and the working area. Below the `lg` breakpoint the sidebar becomes a drawer
+ * opened from the top bar, so tables keep the full width of a phone.
+ */
 export function AdminConsole() {
   const me = useRequireAuth("admin");
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  const signOut = useSignOut();
+  const [drawer, setDrawer] = useState(false);
   const tab = (TABS.find((t) => t.id === params.get("tab"))?.id ?? "overview") as TabId;
   const overview = useQuery({
     queryKey: ["admin", "overview"],
@@ -62,55 +92,146 @@ export function AdminConsole() {
     refetchInterval: 60_000,
   });
 
+  useEffect(() => {
+    if (!drawer) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawer(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [drawer]);
+
   if (!me) return <PageLoading />;
+  const name = `${me.firstName} ${me.lastName}`;
+  const sideLink =
+    "flex min-h-11 w-full items-center gap-3 pr-4 pl-5 text-left text-sm font-semibold text-paper/70 hover:bg-paper/10 hover:text-paper";
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-h1 font-extrabold">Admin</h1>
-      <div
-        role="tablist"
-        aria-label="Admin sections"
-        className="-mx-4 scrollbar-none flex gap-1 overflow-x-auto border-b px-4"
+    <div className="min-h-dvh lg:pl-64">
+      <a
+        href="#admin-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-accent focus:px-3 focus:py-2 focus:font-bold focus:text-accent-foreground"
       >
-        {TABS.map((t) => {
-          const count = "count" in t ? overview.data?.[t.count] : undefined;
-          return (
-            <button
-              key={t.id}
-              role="tab"
-              type="button"
-              aria-selected={tab === t.id}
-              onClick={() =>
-                router.replace(t.id === "overview" ? pathname : `${pathname}?tab=${t.id}`, {
-                  scroll: false,
-                })
-              }
-              className={cn(
-                "-mb-px flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-bold",
-                tab === t.id
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-              {!!count && (
-                <span className="rounded-none bg-destructive px-1.5 font-label text-[11px] leading-5 text-destructive-foreground">
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      <div role="tabpanel">
-        {tab === "overview" && <OverviewPanel query={overview} />}
-        {tab === "verifications" && <VerificationsPanel />}
-        {tab === "disputes" && <DisputesPanel />}
-        {tab === "complaints" && <ComplaintsPanel />}
-        {tab === "reports" && <ReportsPanel />}
-        {tab === "users" && <UsersPanel />}
-        {tab === "monetisation" && <MonetisationPanel />}
-        {tab === "audit" && <AuditPanel />}
-      </div>
+        Skip to content
+      </a>
+      {drawer && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-ink/60 lg:hidden"
+          onClick={() => setDrawer(false)}
+        />
+      )}
+      <aside
+        id="admin-sidebar"
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-ink text-paper transition-transform duration-150 lg:translate-x-0",
+          drawer ? "translate-x-0" : "invisible -translate-x-full lg:visible",
+        )}
+      >
+        <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b-2 border-paper/20 px-4">
+          <div className="flex items-center gap-3">
+            <Logo inverted />
+            <span className="ticket-label text-danfo">Admin</span>
+          </div>
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="flex size-11 items-center justify-center text-paper/70 hover:text-paper lg:hidden"
+            onClick={() => setDrawer(false)}
+          >
+            <X className="size-5" aria-hidden />
+          </button>
+        </div>
+        <nav aria-label="Admin sections" className="flex-1 overflow-y-auto py-3">
+          {TABS.map((t) => {
+            const count = "count" in t ? overview.data?.[t.count] : undefined;
+            const current = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                aria-current={current ? "page" : undefined}
+                onClick={() => {
+                  setDrawer(false);
+                  router.replace(t.id === "overview" ? pathname : `${pathname}?tab=${t.id}`, {
+                    scroll: false,
+                  });
+                  window.scrollTo({ top: 0 });
+                }}
+                className={cn(
+                  "flex min-h-11 w-full items-center gap-3 border-l-4 px-4 text-left text-sm font-bold",
+                  current
+                    ? "border-danfo bg-paper/10 text-paper"
+                    : "border-transparent text-paper/70 hover:bg-paper/10 hover:text-paper",
+                )}
+              >
+                <t.icon className={cn("size-4.5 shrink-0", current && "text-danfo")} aria-hidden />
+                <span className="flex-1">{t.label}</span>
+                {!!count && (
+                  <span className="bg-destructive px-1.5 font-label text-[11px] leading-5 text-destructive-foreground">
+                    {count}
+                    <span className="sr-only"> waiting</span>
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="shrink-0 border-t-2 border-paper/20 py-2">
+          <Link href="/" className={sideLink}>
+            <ExternalLink className="size-4.5" aria-hidden />
+            View public site
+          </Link>
+          <ThemeToggle className={cn(sideLink, "[&_svg]:size-4.5")} />
+          <button type="button" onClick={signOut} className={sideLink}>
+            <LogOut className="size-4.5" aria-hidden />
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b-2 bg-background px-4 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          aria-label="Open menu"
+          aria-expanded={drawer}
+          aria-controls="admin-sidebar"
+          className="-ml-2 flex size-11 items-center justify-center border-2 lg:hidden"
+          onClick={() => setDrawer(true)}
+        >
+          <Menu className="size-5" aria-hidden />
+        </button>
+        <p className="min-w-0 flex-1 truncate ticket-label text-muted-foreground">
+          Admin <span aria-hidden>/</span>{" "}
+          <span className="text-foreground">{TABS.find((t) => t.id === tab)?.label}</span>
+        </p>
+        <div className="flex items-center gap-2.5">
+          <span className="hidden text-right text-sm leading-tight sm:block">
+            <span className="block font-bold">{name}</span>
+            <span className="block text-xs text-muted-foreground">Administrator</span>
+          </span>
+          <Avatar name={name} className="size-9 text-base" />
+        </div>
+      </header>
+
+      <main id="admin-main" className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <section aria-labelledby="admin-section-title" className="mx-auto max-w-6xl space-y-6">
+          <h1 id="admin-section-title" className="text-h1 font-extrabold">
+            {TABS.find((t) => t.id === tab)?.label}
+          </h1>
+          {tab === "overview" && <OverviewPanel query={overview} />}
+          {tab === "verifications" && <VerificationsPanel />}
+          {tab === "disputes" && <DisputesPanel />}
+          {tab === "complaints" && <ComplaintsPanel />}
+          {tab === "reports" && <ReportsPanel />}
+          {tab === "users" && <UsersPanel />}
+          {tab === "monetisation" && <MonetisationPanel />}
+          {tab === "audit" && <AuditPanel />}
+        </section>
+      </main>
     </div>
   );
 }

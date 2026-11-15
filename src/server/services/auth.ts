@@ -2,7 +2,8 @@ import { hash, verify } from "argon2";
 import { type z } from "zod";
 import { getEnv } from "@/env";
 import { db } from "@/server/db/client";
-import { Errors } from "@/server/http/errors";
+import { AppError, Errors } from "@/server/http/errors";
+import { logger } from "@/server/logger";
 import { hmac, newOtpCode, safeEqual } from "@/server/auth/tokens";
 import { revokeAllSessions } from "@/server/auth/session";
 import { sendEmail, sendSms, smsEnabled } from "@/server/providers/messaging";
@@ -178,7 +179,20 @@ export async function sendOtp(args: {
     args.channel === "SMS"
       ? await sendSms(args.target, text)
       : await sendEmail(args.target, "Your OgaSabi code", text);
-  if (!sent.ok) throw new Error(`could not deliver one-time code: ${sent.error}`);
+  if (!sent.ok) {
+    // The provider's reason (unverified sender, bad key, no credit…) goes to the log, and to the
+    // screen outside production so a misconfigured provider is obvious while setting up.
+    logger.error(
+      { channel: args.channel, purpose: args.purpose, reason: sent.error },
+      "could not deliver one-time code",
+    );
+    throw new AppError(
+      "DELIVERY_FAILED",
+      "We could not send your code right now. Please try again in a few minutes." +
+        (env.NODE_ENV !== "production" && sent.error ? ` (${sent.error})` : ""),
+      503,
+    );
+  }
   const isMock =
     args.channel === "SMS" ? env.SMS_PROVIDER === "mock" : env.EMAIL_PROVIDER === "mock";
   // With mock providers nothing is really delivered, so local development gets the code back.
