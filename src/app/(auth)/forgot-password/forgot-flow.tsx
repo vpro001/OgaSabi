@@ -18,7 +18,7 @@ type Step1 = z.infer<typeof forgotPasswordSchema>;
 type Step2 = z.infer<typeof resetPasswordSchema>;
 
 /** Two steps on one page: ask for a code, then enter it with the new password. */
-export function ForgotPasswordFlow() {
+export function ForgotPasswordFlow({ emailOnly = false }: { emailOnly?: boolean }) {
   const router = useRouter();
   const [identifier, setIdentifier] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
@@ -58,7 +58,9 @@ export function ForgotPasswordFlow() {
         <p className="text-muted-foreground">
           {identifier
             ? "Enter the 6-digit code we sent and choose a new password."
-            : "Enter the email or phone number on your account and we will send a 6-digit code."}
+            : emailOnly
+              ? "Enter the email address on your account and we will send a 6-digit code."
+              : "Enter the email or phone number on your account and we will send a 6-digit code."}
         </p>
       </div>
       {formError && <Alert tone="danger">{formError}</Alert>}
@@ -66,7 +68,7 @@ export function ForgotPasswordFlow() {
       {!identifier ? (
         <form onSubmit={requestCode} noValidate className="space-y-4">
           <Field
-            label="Email or phone number"
+            label={emailOnly ? "Email address" : "Email or phone number"}
             htmlFor="identifier"
             error={first.formState.errors.identifier?.message}
           >

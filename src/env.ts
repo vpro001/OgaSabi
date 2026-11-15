@@ -33,14 +33,28 @@ const schema = z
     CORS_ALLOWED_ORIGINS: csv, // web origins; mobile apps send no Origin header
 
     // SMS / OTP
-    SMS_PROVIDER: z.enum(["mock", "termii"]).default("mock"),
+    // Brevo (one key covers both SMS and email)
+    BREVO_API_KEY: z.string().optional(),
+    // Shown as the SMS sender: up to 11 letters or digits.
+    BREVO_SMS_SENDER: z
+      .string()
+      .regex(/^[A-Za-z0-9]{1,11}$/, "must be 1 to 11 letters or digits")
+      .default("OgaSabi"),
+
+    // `none` runs without text messages: accounts need an email, and phone codes are switched off.
+    SMS_PROVIDER: z.enum(["mock", "termii", "brevo", "none"]).default("mock"),
     TERMII_API_KEY: z.string().optional(),
     TERMII_SENDER_ID: z.string().optional(),
     OTP_TTL_SEC: z.coerce.number().int().min(60).max(900).default(300),
 
     // Email (password reset, notifications)
-    EMAIL_PROVIDER: z.enum(["mock", "resend"]).default("mock"),
+    EMAIL_PROVIDER: z.enum(["mock", "resend", "brevo", "smtp"]).default("mock"),
     RESEND_API_KEY: z.string().optional(),
+    // Any SMTP relay. Brevo: smtp-relay.brevo.com, port 587, the SMTP login and SMTP key.
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
     EMAIL_FROM: z.string().default("OgaSabi <no-reply@ogasabi.test>"),
 
     // File storage. `mock` writes to UPLOAD_DIR on local disk.
@@ -93,6 +107,16 @@ const schema = z
     if (env.SMS_PROVIDER === "termii") {
       need(!env.TERMII_API_KEY, "TERMII_API_KEY", "required when SMS_PROVIDER=termii");
       need(!env.TERMII_SENDER_ID, "TERMII_SENDER_ID", "required when SMS_PROVIDER=termii");
+    }
+    need(
+      (env.SMS_PROVIDER === "brevo" || env.EMAIL_PROVIDER === "brevo") && !env.BREVO_API_KEY,
+      "BREVO_API_KEY",
+      "required when SMS_PROVIDER or EMAIL_PROVIDER is brevo",
+    );
+    if (env.EMAIL_PROVIDER === "smtp") {
+      for (const k of ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"] as const) {
+        need(!env[k], k, "required when EMAIL_PROVIDER=smtp");
+      }
     }
     if (env.STORAGE_PROVIDER === "s3") {
       for (const k of [

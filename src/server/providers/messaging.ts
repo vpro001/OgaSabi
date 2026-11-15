@@ -1,3 +1,4 @@
+import nodemailer, { type Transporter } from "nodemailer";
 import { getEnv } from "@/env";
 import { logger } from "@/server/logger";
 import { maskPhone } from "@/lib/phone";
@@ -21,12 +22,83 @@ export function lastMockMessage(to: string): string | null {
   return null;
 }
 
+/** Splits `Name <address>` (or a bare address) into the shape Brevo expects. */
+export function parseSender(from: string): { name?: string; email: string } {
+  const match = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(from);
+  if (!match) return { email: from.trim() };
+  const name = match[1]!.trim();
+  return name ? { name, email: match[2]!.trim() } : { email: match[2]!.trim() };
+}
+
+let smtp: Transporter | undefined;
+
+/** One pooled connection per process. Port 465 is TLS from the start; other ports upgrade with STARTTLS. */
+function smtpTransport(): Transporter {
+  const env = getEnv();
+  smtp ??= nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_PORT === 465,
+    requireTLS: env.SMTP_PORT !== 465,
+    auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
+    pool: true,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
+  });
+  return smtp;
+}
+
+async function brevo(path: string, body: unknown): Promise<SendResult> {
+  const res = await fetch(`https://api.brevo.com/v3/${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "api-key": getEnv().BREVO_API_KEY ?? "",
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
+  });
+  const json = (await res.json().catch(() => ({}))) as {
+    messageId?: string | number;
+    message?: string;
+  };
+  if (!res.ok) return { ok: false, error: json.message ?? `Brevo responded ${res.status}` };
+  return {
+    ok: true,
+    providerRef: json.messageId === undefined ? undefined : String(json.messageId),
+  };
+}
+
+/**
+ * False when SMS_PROVIDER=none. Read straight from the environment so pages can call it while
+ * rendering; the root layout reads request headers, so every page renders per request.
+ */
+export function smsEnabled(): boolean {
+  return process.env.SMS_PROVIDER !== "none";
+}
+
 export async function sendSms(to: string, text: string): Promise<SendResult> {
   const env = getEnv();
+  if (env.SMS_PROVIDER === "none") return { ok: false, error: "SMS is not configured" };
   if (env.SMS_PROVIDER === "mock") {
     record(to, text);
     logger.info({ to: maskPhone(to), sms: text }, "[mock-sms] message not sent to a real phone");
     return { ok: true, providerRef: "mock" };
+  }
+  if (env.SMS_PROVIDER === "brevo") {
+    try {
+      return await brevo("transactionalSMS/send", {
+        sender: env.BREVO_SMS_SENDER,
+        recipient: to.replace(/^\+/, ""),
+        content: text,
+        type: "transactional",
+      });
+    } catch (err) {
+      logger.warn({ err, to: maskPhone(to) }, "sms send failed");
+      return { ok: false, error: err instanceof Error ? err.message : "send failed" };
+    }
   }
   try {
     const res = await fetch("https://api.ng.termii.com/api/sms/send", {
@@ -57,6 +129,28 @@ export async function sendEmail(to: string, subject: string, text: string): Prom
     record(to, text);
     logger.info({ to, subject, email: text }, "[mock-email] message not sent to a real inbox");
     return { ok: true, providerRef: "mock" };
+  }
+  if (env.EMAIL_PROVIDER === "smtp") {
+    try {
+      const info = await smtpTransport().sendMail({ from: env.EMAIL_FROM, to, subject, text });
+      return { ok: true, providerRef: info.messageId };
+    } catch (err) {
+      logger.warn({ err }, "email send failed");
+      return { ok: false, error: err instanceof Error ? err.message : "send failed" };
+    }
+  }
+  if (env.EMAIL_PROVIDER === "brevo") {
+    try {
+      return await brevo("smtp/email", {
+        sender: parseSender(env.EMAIL_FROM),
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+      });
+    } catch (err) {
+      logger.warn({ err }, "email send failed");
+      return { ok: false, error: err instanceof Error ? err.message : "send failed" };
+    }
   }
   try {
     const res = await fetch("https://api.resend.com/emails", {

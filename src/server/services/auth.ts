@@ -5,7 +5,7 @@ import { db } from "@/server/db/client";
 import { Errors } from "@/server/http/errors";
 import { hmac, newOtpCode, safeEqual } from "@/server/auth/tokens";
 import { revokeAllSessions } from "@/server/auth/session";
-import { sendEmail, sendSms } from "@/server/providers/messaging";
+import { sendEmail, sendSms, smsEnabled } from "@/server/providers/messaging";
 import { isValidKey, keyOwner, publicUrl } from "@/server/providers/storage";
 import { audit } from "@/server/services/notifications";
 import { normalizePhone } from "@/lib/phone";
@@ -42,6 +42,12 @@ function uniqueViolation(err: unknown): string | null {
 
 export async function register(input: z.infer<typeof registerSchema>) {
   const email = input.email?.toLowerCase();
+  // Without SMS, email is the only way to deliver a password reset code.
+  if (!email && !smsEnabled()) {
+    throw Errors.validation("email: Enter an email address", {
+      fields: { email: "Enter an email address. We use it to reset your password." },
+    });
+  }
   let phone: string | undefined;
   if (input.phone) {
     const normalised = normalizePhone(input.phone);
@@ -207,6 +213,7 @@ export async function forgotPassword(
 ): Promise<{ devCode?: string }> {
   const identifier = parseIdentifier(identifierRaw);
   if (!identifier) return {};
+  if (identifier.phone && !smsEnabled()) return {};
   const user = await db.user.findFirst({
     where: {
       ...(identifier.email ? { email: identifier.email } : { phone: identifier.phone }),

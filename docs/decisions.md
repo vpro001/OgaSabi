@@ -80,9 +80,9 @@ Messages poll every 6 s and request state every 15 s while the tab is visible. I
 
 Supersedes the `cloudinary` option. S3 is called through hand-written Signature V4 requests, so no SDK is bundled. Keys are `pub/<purpose>/<owner>/<uuid>.<ext>` or `priv/…`; files are identified by magic bytes, never by the client's content type; private files are reachable only through expiring signed URLs.
 
-## ADR-020: Email provider is Resend (or mock)
+## ADR-020: Email provider is Resend or Brevo (or mock)
 
-Implements ADR-011. `EMAIL_PROVIDER=resend` with `RESEND_API_KEY`.
+Implements ADR-011. `EMAIL_PROVIDER=resend` with `RESEND_API_KEY`, `EMAIL_PROVIDER=brevo` with `BREVO_API_KEY`, or `EMAIL_PROVIDER=smtp` with `SMTP_*` for any SMTP relay (Brevo's is `smtp-relay.brevo.com:587`), sent through nodemailer. Brevo can also carry SMS (`SMS_PROVIDER=brevo`, same key), so one account covers both channels; Termii stays available for SMS.
 
 ## ADR-021: Strict CSP through `src/proxy.ts`
 

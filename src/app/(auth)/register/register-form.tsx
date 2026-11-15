@@ -18,7 +18,7 @@ import { registerSchema, type RegisterInput } from "@/lib/schemas";
 import { type Me } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function RegisterForm() {
+export function RegisterForm({ emailRequired = false }: { emailRequired?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const client = useQueryClient();
@@ -118,7 +118,11 @@ export function RegisterForm() {
           label="Email address"
           htmlFor="email"
           error={errors.email?.message}
-          hint="Enter a phone number, an email, or both."
+          hint={
+            emailRequired
+              ? "Required. We send password reset codes here."
+              : "Enter a phone number, an email, or both."
+          }
         >
           <Input
             id="email"

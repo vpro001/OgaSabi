@@ -1,7 +1,7 @@
 import { db } from "@/server/db/client";
 import { logger } from "@/server/logger";
 import { getEnv } from "@/env";
-import { sendEmail, sendSms } from "@/server/providers/messaging";
+import { sendEmail, sendSms, smsEnabled } from "@/server/providers/messaging";
 import {
   type NotificationChannel,
   type NotificationType,
@@ -102,9 +102,15 @@ async function deliverOne(id: string): Promise<void> {
 
   for (const channel of channels) {
     const target = channel === "SMS" ? n.user.phone : n.user.email;
-    if (!target) {
+    const skip =
+      channel === "SMS" && !smsEnabled()
+        ? "SMS is not configured"
+        : !target
+          ? "no contact on file"
+          : null;
+    if (skip || !target) {
       await db.notificationDelivery.create({
-        data: { notificationId: id, channel, status: "SKIPPED", error: "no contact on file" },
+        data: { notificationId: id, channel, status: "SKIPPED", error: skip },
       });
       continue;
     }

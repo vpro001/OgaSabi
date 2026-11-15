@@ -22,20 +22,20 @@ import { type Me } from "@/lib/types";
 
 type Pref = { type: string; sms: boolean; email: boolean };
 
-export function Settings() {
+export function Settings({ smsEnabled = true }: { smsEnabled?: boolean }) {
   const me = useRequireAuth();
   if (!me) return <PageLoading />;
   return (
     <div className="space-y-6">
-      <ProfileCard me={me} />
+      <ProfileCard me={me} smsEnabled={smsEnabled} />
       <PasswordCard />
-      <PreferencesCard />
+      <PreferencesCard smsEnabled={smsEnabled} />
       <DangerCard isAdmin={me.roles.includes("ADMIN")} />
     </div>
   );
 }
 
-function ProfileCard({ me }: { me: Me }) {
+function ProfileCard({ me, smsEnabled }: { me: Me; smsEnabled: boolean }) {
   const toast = useToast();
   const client = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
@@ -124,12 +124,14 @@ function ProfileCard({ me }: { me: Me }) {
         <Field label="Phone number" htmlFor="s-phone" error={e.phone?.message}>
           <Input id="s-phone" type="tel" autoComplete="tel" {...register("phone")} />
         </Field>
-        <VerifyLine
-          verified={me.phoneVerified}
-          present={!!me.phone}
-          onVerify={() => setVerify("SMS")}
-          what="phone number"
-        />
+        {smsEnabled && (
+          <VerifyLine
+            verified={me.phoneVerified}
+            present={!!me.phone}
+            onVerify={() => setVerify("SMS")}
+            what="phone number"
+          />
+        )}
         <Field label="Email address" htmlFor="s-email" error={e.email?.message}>
           <Input
             id="s-email"
@@ -319,7 +321,7 @@ function PasswordCard() {
   );
 }
 
-function PreferencesCard() {
+function PreferencesCard({ smsEnabled }: { smsEnabled: boolean }) {
   const toast = useToast();
   const client = useQueryClient();
   const query = useQuery({
@@ -343,8 +345,8 @@ function PreferencesCard() {
     <Card>
       <h2 className="text-lg font-extrabold">Notifications</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        You always get notifications inside OgaSabi. Choose which ones should also reach you by SMS
-        or email.
+        You always get notifications inside OgaSabi. Choose which ones should also reach you by{" "}
+        {smsEnabled ? "SMS or email" : "email"}.
       </p>
       {query.isPending ? (
         <Spinner className="mt-4" />
@@ -359,9 +361,11 @@ function PreferencesCard() {
               <th scope="col" className="pb-2 font-bold">
                 Event
               </th>
-              <th scope="col" className="w-16 pb-2 text-center font-bold">
-                SMS
-              </th>
+              {smsEnabled && (
+                <th scope="col" className="w-16 pb-2 text-center font-bold">
+                  SMS
+                </th>
+              )}
               <th scope="col" className="w-16 pb-2 text-center font-bold">
                 Email
               </th>
@@ -373,7 +377,7 @@ function PreferencesCard() {
                 <th scope="row" className="py-2.5 text-left font-medium">
                   {humanize(p.type)}
                 </th>
-                {(["sms", "email"] as const).map((c) => (
+                {(smsEnabled ? (["sms", "email"] as const) : (["email"] as const)).map((c) => (
                   <td key={c} className="text-center">
                     <input
                       type="checkbox"

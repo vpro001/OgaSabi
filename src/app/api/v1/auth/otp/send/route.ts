@@ -6,6 +6,7 @@ import * as auth from "@/server/services/auth";
 import { Errors } from "@/server/http/errors";
 
 import { db } from "@/server/db/client";
+import { smsEnabled } from "@/server/providers/messaging";
 
 const bodySchema = z.object({ channel: z.enum(["SMS", "EMAIL"]) });
 
@@ -13,6 +14,8 @@ const bodySchema = z.object({ channel: z.enum(["SMS", "EMAIL"]) });
 export const POST = route(
   { auth: true, body: bodySchema, rateLimit: Rules.otp },
   async ({ user, body, ip }) => {
+    if (body.channel === "SMS" && !smsEnabled())
+      throw Errors.badRequest("Phone verification by text message is not available yet.");
     const target = body.channel === "SMS" ? user.phone : user.email;
     if (!target)
       throw Errors.badRequest(

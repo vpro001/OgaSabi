@@ -31,6 +31,15 @@ describe("parseEnv", () => {
 
   it("requires provider credentials when a provider is selected", () => {
     expect(() => parseEnv({ ...valid, SMS_PROVIDER: "termii" })).toThrow(/TERMII_API_KEY/);
+    expect(() => parseEnv({ ...valid, EMAIL_PROVIDER: "brevo" })).toThrow(/BREVO_API_KEY/);
+    expect(() => parseEnv({ ...valid, EMAIL_PROVIDER: "smtp" })).toThrow(
+      /SMTP_HOST[\s\S]*SMTP_USER[\s\S]*SMTP_PASS/,
+    );
+    expect(() => parseEnv({ ...valid, SMS_PROVIDER: "brevo" })).toThrow(/BREVO_API_KEY/);
+    expect(
+      parseEnv({ ...valid, SMS_PROVIDER: "brevo", EMAIL_PROVIDER: "brevo", BREVO_API_KEY: "k" })
+        .BREVO_SMS_SENDER,
+    ).toBe("OgaSabi");
     expect(() => parseEnv({ ...valid, PAYMENTS_ENABLED: "true" })).toThrow(/PAYSTACK_SECRET_KEY/);
   });
 
@@ -38,6 +47,23 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...valid, NODE_ENV: "production" })).toThrow(
       /mock SMS[\s\S]*mock storage[\s\S]*https/,
     );
+  });
+
+  it("allows production without SMS when SMS_PROVIDER=none", () => {
+    const env = parseEnv({
+      ...valid,
+      NODE_ENV: "production",
+      APP_URL: "https://ogasabi.example",
+      SMS_PROVIDER: "none",
+      EMAIL_PROVIDER: "brevo",
+      BREVO_API_KEY: "k",
+      STORAGE_PROVIDER: "s3",
+      S3_BUCKET: "b",
+      S3_REGION: "r",
+      S3_ACCESS_KEY_ID: "i",
+      S3_SECRET_ACCESS_KEY: "s",
+    });
+    expect(env.SMS_PROVIDER).toBe("none");
   });
 
   it("lets ALLOW_INSECURE_LOCAL bypass the production guards (docker compose only)", () => {
