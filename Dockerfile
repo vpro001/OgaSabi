@@ -12,7 +12,6 @@ RUN npm ci
 # ── build: generate Prisma client and build Next.js (standalone output) ─
 FROM deps AS build
 COPY . .
-RUN npx prisma generate
 # NEXT_PUBLIC_* values are baked into the browser bundle here, so they must be build arguments.
 # Hosts such as Render pass a service's environment variables as build arguments automatically;
 # with plain Docker use --build-arg. Left unset, the defaults in the code apply.
