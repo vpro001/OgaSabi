@@ -213,7 +213,7 @@ export function AdminConsole() {
             <span className="block font-bold">{name}</span>
             <span className="block text-xs text-muted-foreground">Administrator</span>
           </span>
-          <Avatar name={name} className="size-9 text-base" />
+          <Avatar name={name} src={me.avatarUrl} className="size-9 text-base" />
         </div>
       </header>
 
